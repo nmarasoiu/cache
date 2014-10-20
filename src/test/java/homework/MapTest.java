@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
+import static homework.TestUtils.createRoot;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 
 /**
@@ -32,7 +33,7 @@ public class MapTest extends MapInterfaceTest<String,String> {
 
     @Override
     protected Map<String,String> makeEmptyMap() throws UnsupportedOperationException {
-        return new MapBasedOnCache<>(new FileSystemHashCache<>(newRoot()));
+        return new MapBasedOnCache<>(new FileSystemHashCache<>(createRoot()));
     }
 
     @Override
@@ -55,14 +56,4 @@ public class MapTest extends MapInterfaceTest<String,String> {
         return "d";
     }
 
-    private Path newRoot() {
-        return createRoot(Paths.get("/tmp/tema/" + UUID.randomUUID()));
-    }
-
-    private Path createRoot(Path home) {
-        return rethrowIOExAsIoErr(() -> {
-            if(Files.exists(home)) throw new IllegalStateException();
-            return Files.createDirectories(home);
-        });
-    }
 }

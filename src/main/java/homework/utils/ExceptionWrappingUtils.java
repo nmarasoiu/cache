@@ -1,6 +1,6 @@
 package homework.utils;
 
-import java.io.IOError;
+import java.io.UncheckedIOException;
 import java.io.IOException;
 
 /**
@@ -11,7 +11,7 @@ public class ExceptionWrappingUtils {
         try {
             return callable.call();
         } catch (IOException e) {
-            throw new IOError(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -19,7 +19,7 @@ public class ExceptionWrappingUtils {
         try {
             callable.call();
         } catch (IOException e) {
-            throw new IOError(e);
+            throw new UncheckedIOException(e);
         }
     }
 

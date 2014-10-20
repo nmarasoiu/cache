@@ -3,7 +3,7 @@ package homework;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.IOError;
+import java.io.UncheckedIOException;
 import java.io.NotSerializableException;
 
 /**
@@ -24,7 +24,7 @@ public class NonSerializableObjectTest extends CacheTest<Object, Object> {
     public void checkGetAfterPutReturnsValue() {
         try {
             super.checkGetAfterPutReturnsValue();
-        } catch (IOError e) {
+        } catch (UncheckedIOException e) {
             Assert.assertEquals(e.getCause().getClass(), NotSerializableException.class);
             return;
         }
@@ -35,7 +35,7 @@ public class NonSerializableObjectTest extends CacheTest<Object, Object> {
     public void checkGetAfterPutReturnsValueForNull() {
         try {
             super.checkGetAfterPutReturnsValueForNull();
-        } catch (IOError e) {
+        } catch (UncheckedIOException e) {
             Assert.assertEquals(e.getCause().getClass(), NotSerializableException.class);
             return;
         }
@@ -46,7 +46,7 @@ public class NonSerializableObjectTest extends CacheTest<Object, Object> {
     public void checkGetAfterPutReturnsNull() {
         try {
             super.checkGetAfterPutReturnsNull();
-        } catch (IOError e) {
+        } catch (UncheckedIOException e) {
             Assert.assertEquals(e.getCause().getClass(), NotSerializableException.class);
             return;
         }

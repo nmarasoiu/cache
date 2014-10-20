@@ -189,7 +189,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
             return (byte[]) object;
         }
         if (!(object instanceof Serializable)) {
-            throw new IOError(new NotSerializableException(object.getClass().getName()));
+            throw new UncheckedIOException(new NotSerializableException(object.getClass().getName()));
         }
         return rethrowIOExAsIoErr(() -> {
             Serializable ser = (Serializable) object;

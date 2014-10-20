@@ -112,7 +112,7 @@ public abstract class MapInterfaceTest<K, V> extends TestCase {
      * @return a new map instance.
      */
     protected Map<K, V> makeEitherMap() {
-            return makePopulatedMap();
+            return makeEmptyMap();//makePopulatedMap();
     }
 
     protected final boolean supportsValuesHashCode(Map<K, V> map) {
