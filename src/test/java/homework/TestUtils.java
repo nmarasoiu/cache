@@ -11,8 +11,9 @@ import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
  * Created by nmarasoiu on 10/20/14.
  */
 public class TestUtils {
+    //externalize into configuration
     public static Path createRoot() {
-        return createRoot(Paths.get("E:/tmp/tema/" + UUID.randomUUID()));
+        return createRoot(Paths.get("/tmp/tema/" + UUID.randomUUID()));
     }
 
     private static Path createRoot(Path home) {

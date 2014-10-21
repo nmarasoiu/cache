@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static homework.utils.StreamUtils.reify;
+
 /**
  * Created by dnmaras on 10/15/14.
  */
@@ -29,13 +31,8 @@ public class CacheBasedOnMap<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
-        return copyStream(StreamSupport.stream(underlyingMap.entrySet().spliterator(), false));
+        return reify(StreamSupport.stream(underlyingMap.entrySet().spliterator(), false));
     }
-    //todo: reuse this
-    public static <K,V> Stream<Map.Entry<K, V>> copyStream(Stream<Map.Entry<K, V>> entryStream) {
-        return Stream.of(entryStream.toArray(Map.Entry[]::new));
-    }
-
 
     @Override
     public boolean remove(K k) {

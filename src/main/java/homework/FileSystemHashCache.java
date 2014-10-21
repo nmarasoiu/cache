@@ -14,6 +14,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
+import static homework.utils.StreamUtils.reify;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -49,40 +50,45 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         byte[] keyBytes = bytes(key);
         byte[] valueBytes = bytes(value);
         Path hashDir = (hashDir(keyBytes));
-        Optional<Path> existingValueFile = getExistingValueFile(hashDir, keyBytes);
+        Optional<Path> maybeValueFile = getExistingValueFile(hashDir, keyBytes);
         rethrowIOExAsIoErr(() -> {
-            if (!existingValueFile.isPresent()) {
+            if (maybeValueFile.isPresent()) {
+                Files.delete(maybeValueFile.get());
+                write(valueBytes, maybeValueFile.get());
+            } else {
+                Files.createDirectories(hashDir);
                 Path entryDir = Files.createDirectories(nextDir(hashDir));
                 write(keyBytes, entryDir.resolve(keyFilename));
                 write(valueBytes, entryDir.resolve(valFilename));
-            } else {
-                Files.delete(existingValueFile.get());
-                write(valueBytes, existingValueFile.get());
             }
         });
     }
 
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
-        return rethrowIOExAsIoErr(() ->
-                Files.walk(basePath)
-                        .filter(Files::isDirectory)
-                        .filter(path -> path.getParent() != null)
-                        .filter(path -> basePath.equals(path.getParent().getParent()))
-                        .filter(path -> Files.exists(path.resolve(keyFilename)))
-                        .filter(path -> Files.exists(path.resolve(valFilename)))
-                        .map(entryPath -> rethrowIOExAsIoErr(() -> {
-                            K k = (K) fromBytes(keyBytes(entryPath));
-                            V v = get(k);
-                            return new AbstractMap.SimpleEntry<K, V>(k, v) {
-                                @Override
-                                public V setValue(V value) {
-                                    V old = get(k);
-                                    put(k, value);
-                                    return old;
-                                }
-                            };
-                        })));
+        return rethrowIOExAsIoErr(() -> {
+                    try (Stream<Path> pathsStream = Files.walk(basePath)) {
+                        return reify(
+                                pathsStream.filter(Files::isDirectory)
+                                        .filter(path -> path.getParent() != null)
+                                        .filter(path -> basePath.equals(path.getParent().getParent()))
+                                        .filter(path -> Files.exists(path.resolve(keyFilename)))
+                                        .filter(path -> Files.exists(path.resolve(valFilename)))
+                                        .map(entryPath -> rethrowIOExAsIoErr(() -> {
+                                            K k = (K) fromBytes(keyBytes(entryPath));
+                                            V v = get(k);
+                                            return new AbstractMap.SimpleEntry<K, V>(k, v) {
+                                                @Override
+                                                public V setValue(V value) {
+                                                    V old = get(k);
+                                                    put(k, value);
+                                                    return old;
+                                                }
+                                            };
+                                        })));
+                    }
+                }
+        );
     }
 
     @Override
@@ -102,15 +108,12 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     private Path nextDir(Path hashDir) {
-        return hashDir.resolve("" + nextInt(hashDir));
-    }
-
-    private long nextInt(Path hashDir) {
         return rethrowIOExAsIoErr(() -> {
             Path file = hashDir.resolve(lastEntryNumberFilename);
-            final Long l = 1 + (Files.exists(file) ? new Long(Files.lines(file).findFirst().get()) : 0);
-            Files.write(file, Collections.singleton(l.toString()));
-            return l;
+            final String nextInt = String.valueOf
+                    (Files.exists(file) ? 1 + Long.parseLong(Files.lines(file).findFirst().get()) : 1);
+            Files.write(file, Collections.singleton(nextInt));
+            return hashDir.resolve(nextInt);
         });
     }
 
@@ -126,17 +129,19 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     private Optional<Path> getEntryFor(Path hashDir, byte[] key) {
-        return rethrowIOExAsIoErr(() ->
-                Files.list(hashDir)
-                        .filter(Files::isDirectory)
-                        .filter(entryDir -> isThisMyKey(key, entryDir))
-                        .findFirst());
+        return Files.exists(hashDir) ?
+                rethrowIOExAsIoErr(() -> {
+                    try (Stream<Path> list = Files.list(hashDir)) {
+                        return reify(list.filter(Files::isDirectory)
+                                .filter(entryDir -> isThisMyKey(key, entryDir))
+                                .findFirst());
+                    }
+                })
+                : Optional.empty();
     }
 
     private Boolean isThisMyKey(byte[] bytes, Path entryDir) {
-        return rethrowIOExAsIoErr(() -> (Arrays.equals(
-                keyBytes(entryDir),
-                bytes)));
+        return rethrowIOExAsIoErr(() -> (Arrays.equals(keyBytes(entryDir), bytes)));
     }
 
     private byte[] keyBytes(Path entryDir) throws IOException {
@@ -144,11 +149,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     private Path hashDir(byte[] key) {
-        Path path = basePath.resolve(hash(key));
-        return rethrowIOExAsIoErr(() -> {
-            Files.createDirectories(path);
-            return path;
-        });
+        return basePath.resolve(hash(key));
     }
 
     private String hash(byte[] key) {
@@ -158,7 +159,8 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     private String toString(byte[] bytes) {
         StringBuilder builder = new StringBuilder(bytes.length * 2);
         for (byte b : bytes) {
-            builder.append(Integer.toHexString((int) b));
+            //todo: cache the formatter and the digester factory below, etc
+            builder.append(String.format("%02x", b));
         }
         return builder.toString();
     }

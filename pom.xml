@@ -38,10 +38,6 @@
     <build>
         <plugins>
             <plugin>
-                <!-- I seem to remember that the requirement was with java 7
-                But I found some cool features in Java 8 that I wanted to experiment.
-                Maven does not support yet 1.8!
-                You need to run tests in IntelliJ Idea 13.1 with JDK8-->
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.2</version>
                 <configuration>

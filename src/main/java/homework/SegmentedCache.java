@@ -39,7 +39,7 @@ public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implem
     }
 
     protected int modulo(K key) {
-        return hash(key) % concurrencyFactor;
+        return Math.abs(hash(key)) % concurrencyFactor;
     }
 
     protected int hash(K key) {

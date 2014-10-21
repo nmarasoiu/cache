@@ -3,7 +3,10 @@ package homework;
 import homework.cacheDecorators.ExtendedCache;
 import org.mapdb.ConcurrentMapInterfaceTest;
 
+import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Consumer;
 
 /**
  * Created by dnmaras on 10/19/14.
@@ -30,7 +33,12 @@ public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String
     @Override
     protected ConcurrentMap<String,String> makePopulatedMap() throws UnsupportedOperationException {
         ConcurrentMap<String, String> m = makeEmptyMap();
-        m.put("a","b");
+        Arrays.asList(UUID.randomUUID().toString().split("-")).stream().forEach(new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                m.put(s, s);
+            }
+        });
         return m;
     }
 

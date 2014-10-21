@@ -5,8 +5,10 @@ import org.mapdb.MapInterfaceTest;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static homework.TestUtils.createRoot;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
@@ -39,10 +41,12 @@ public class MapTest extends MapInterfaceTest<String,String> {
     @Override
     protected Map<String,String> makePopulatedMap() throws UnsupportedOperationException {
         Map<String,String> map = makeEmptyMap();
-        map.put("a","b");
-        map.put("x","x");
-        map.put("a","b");
-        map.put("a","b");
+        Arrays.asList(UUID.randomUUID().toString().split("-")).stream().forEach(new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                map.put(s, s);
+            }
+        });
         return map;
     }
 

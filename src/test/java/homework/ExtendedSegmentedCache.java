@@ -5,8 +5,9 @@ import homework.cacheDecorators.ExtendedCache;
 
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.IntFunction;
 import java.util.stream.Stream;
+
+import static homework.utils.StreamUtils.reify;
 
 /**
  * Created by dnmaras on 10/19/14.
@@ -39,11 +40,7 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
         Stream<Map.Entry<K, V>> entryStream = getShards().stream().flatMap(ExtendedCache::entryStream);
-        return copyStream(entryStream);
-    }
-
-    public static <K,V> Stream<Map.Entry<K, V>> copyStream(Stream<Map.Entry<K, V>> entryStream) {
-        return Stream.of(entryStream.toArray(Map.Entry[]::new));
+        return reify(entryStream);
     }
 
     @Override
