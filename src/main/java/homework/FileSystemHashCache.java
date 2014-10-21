@@ -1,8 +1,6 @@
 package homework;
 
-import homework.cacheDecorators.ExtendedCache;
 import homework.markers.NonThreadSafe;
-import homework.utils.IORunnable;
 
 import java.io.*;
 import java.nio.file.FileSystem;
@@ -10,7 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
@@ -21,11 +21,11 @@ import static homework.utils.StreamUtils.reify;
  * If the filesystem has not-nice limitations in directory entries, pls use ZipFileSystem (hope that is zip64)
  */
 @NonThreadSafe
-public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
+public class FileSystemHashCache<K, V> implements Cache<K, V> {
     public static final String valFilename = "value.bin";
     public static final String keyFilename = "key.bin";
     public static final String lastEntryNumberFilename = "last.txt";
-    private final Path basePath;
+    protected final Path basePath;
 
     public FileSystemHashCache(FileSystem fs, String path) {
         this(fs.getPath(path));
@@ -64,49 +64,6 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         });
     }
 
-    @Override
-    public Stream<Map.Entry<K, V>> entryStream() {
-        return rethrowIOExAsIoErr(() -> {
-                    try (Stream<Path> pathsStream = Files.walk(basePath)) {
-                        return reify(
-                                pathsStream.filter(Files::isDirectory)
-                                        .filter(path -> path.getParent() != null)
-                                        .filter(path -> basePath.equals(path.getParent().getParent()))
-                                        .filter(path -> Files.exists(path.resolve(keyFilename)))
-                                        .filter(path -> Files.exists(path.resolve(valFilename)))
-                                        .map(entryPath -> rethrowIOExAsIoErr(() -> {
-                                            K k = (K) fromBytes(keyBytes(entryPath));
-                                            V v = get(k);
-                                            return new AbstractMap.SimpleEntry<K, V>(k, v) {
-                                                @Override
-                                                public V setValue(V value) {
-                                                    V old = get(k);
-                                                    put(k, value);
-                                                    return old;
-                                                }
-                                            };
-                                        })));
-                    }
-                }
-        );
-    }
-
-    @Override
-    public boolean remove(K key) {
-        byte[] b = bytes(key);
-        Path hashDir = hashDir(b);
-        Optional<Path> entryDirOpt = getEntryFor(hashDir, b);
-        boolean exists = entryDirOpt.isPresent();
-        if (exists)
-            rethrowIOExAsIoErr((IORunnable) () -> {
-                Path entryDir = entryDirOpt.get();
-                Files.delete(entryDir.resolve(keyFilename));
-                Files.delete(entryDir.resolve(valFilename));
-                Files.delete(entryDir);
-            });
-        return exists;
-    }
-
     private Path nextDir(Path hashDir) {
         return rethrowIOExAsIoErr(() -> {
             Path file = hashDir.resolve(lastEntryNumberFilename);
@@ -128,7 +85,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
                 .map(entryDir -> entryDir.resolve(valFilename));
     }
 
-    private Optional<Path> getEntryFor(Path hashDir, byte[] key) {
+    Optional<Path> getEntryFor(Path hashDir, byte[] key) {
         return Files.exists(hashDir) ?
                 rethrowIOExAsIoErr(() -> {
                     try (Stream<Path> list = Files.list(hashDir)) {
@@ -144,11 +101,11 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         return rethrowIOExAsIoErr(() -> (Arrays.equals(keyBytes(entryDir), bytes)));
     }
 
-    private byte[] keyBytes(Path entryDir) throws IOException {
+    byte[] keyBytes(Path entryDir) throws IOException {
         return Files.readAllBytes(entryDir.resolve(keyFilename));
     }
 
-    private Path hashDir(byte[] key) {
+    Path hashDir(byte[] key) {
         return basePath.resolve(hash(key));
     }
 
@@ -173,7 +130,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         }
     }
 
-    private Object fromBytes(byte[] bytes) {
+    Object fromBytes(byte[] bytes) {
         return rethrowIOExAsIoErr(() -> {
             if (bytes.length == 0) return null;
             try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
@@ -185,7 +142,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         });
     }
 
-    private <T> byte[] bytes(T object) {
+    <T> byte[] bytes(T object) {
         if (object == null) return new byte[]{};
         if (object instanceof byte[]) {
             return (byte[]) object;

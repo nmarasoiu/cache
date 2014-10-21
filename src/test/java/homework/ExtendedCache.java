@@ -1,6 +1,4 @@
-package homework.cacheDecorators;
-
-import homework.Cache;
+package homework;
 
 import java.util.Map;
 import java.util.stream.Stream;

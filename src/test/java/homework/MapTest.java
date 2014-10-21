@@ -2,16 +2,12 @@ package homework;
 
 import org.mapdb.MapInterfaceTest;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
 import static homework.TestUtils.createRoot;
-import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 
 /**
  * Created by dnmaras on 10/18/14.
@@ -35,7 +31,7 @@ public class MapTest extends MapInterfaceTest<String,String> {
 
     @Override
     protected Map<String,String> makeEmptyMap() throws UnsupportedOperationException {
-        return new MapBasedOnCache<>(new FileSystemHashCache<>(createRoot()));
+        return new MapBasedOnCache<>(new ExtendedCacheOnFilesystem<>(createRoot()));
     }
 
     @Override

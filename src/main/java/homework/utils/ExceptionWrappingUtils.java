@@ -1,7 +1,7 @@
 package homework.utils;
 
-import java.io.UncheckedIOException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 /**
  * In languages with Scala, this would be a single method, and T could be bound to Unit, meaning void.

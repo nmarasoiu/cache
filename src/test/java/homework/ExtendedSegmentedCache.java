@@ -1,8 +1,5 @@
 package homework;
 
-import homework.cacheDecorators.CacheBasedOnMap;
-import homework.cacheDecorators.ExtendedCache;
-
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
@@ -21,8 +18,8 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
     protected List<ExtendedCache<K, V>> createShardMaps() {
         List<ExtendedCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
-            ExtendedCache<K, V> memCache = new CacheBasedOnMap<>(lruMap());
-            ExtendedCache<K, V> fsCache = new FileSystemHashCache<>(basePath.resolve(String.valueOf(i)));
+            ExtendedCache<K, V> memCache = new ExtCacheOnMap<>(lruMap());
+            ExtendedCache<K, V> fsCache = new ExtendedCacheOnFilesystem<K, V>(basePath.resolve(String.valueOf(i)));
             shards.add(new ExtendedLayeredCache<>(memCache, fsCache));
         }
         return Collections.unmodifiableList(shards);

@@ -1,7 +1,5 @@
 package homework;
 
-import homework.cacheDecorators.ExtendedCache;
-
 import java.util.*;
 
 /**

@@ -1,6 +1,5 @@
 package homework;
 
-import homework.cacheDecorators.ExtendedCache;
 import org.mapdb.ConcurrentMapInterfaceTest;
 
 import java.util.Arrays;

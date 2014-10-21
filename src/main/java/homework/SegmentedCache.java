@@ -4,9 +4,7 @@ package homework;
 import homework.markers.ThreadSafe;
 
 import java.nio.file.Path;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by dnmaras on 10/17/14.

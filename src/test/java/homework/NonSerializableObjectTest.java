@@ -3,8 +3,8 @@ package homework;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.UncheckedIOException;
 import java.io.NotSerializableException;
+import java.io.UncheckedIOException;
 
 /**
  * Created by dnmaras on 10/13/14.
