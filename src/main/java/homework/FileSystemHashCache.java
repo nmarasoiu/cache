@@ -22,9 +22,10 @@ import static homework.utils.StreamUtils.reify;
  */
 @NonThreadSafe
 public class FileSystemHashCache<K, V> implements Cache<K, V> {
-    public static final String valFilename = "value.bin";
-    public static final String keyFilename = "key.bin";
-    public static final String lastEntryNumberFilename = "last.txt";
+    public static final String VALUE_FILENAME = "value.bin";
+    public static final String KEY_FILENAME = "key.bin";
+    public static final String LAST_ENTRY_NO_FILENAME = "last.txt";
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[]{};
     protected final Path basePath;
 
     public FileSystemHashCache(FileSystem fs, String path) {
@@ -39,10 +40,11 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     public V get(K key) {
         byte[] keyBytes = bytes(key);
         Optional<Path> maybeValueFile = getExistingValueFile(hashDir(keyBytes), keyBytes);
-        return maybeValueFile.map((Path valuePath) -> rethrowIOExAsIoErr(() -> {
-            byte[] bytes = Files.readAllBytes(valuePath);
-            return (V) fromBytes(bytes);
-        })).orElse(null);
+        return maybeValueFile.map(
+                (Path valuePath) ->
+                        rethrowIOExAsIoErr(() ->
+                                (V) fromBytes(Files.readAllBytes(valuePath))))
+                .orElse(null);
     }
 
     @Override
@@ -58,15 +60,15 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
             } else {
                 Files.createDirectories(hashDir);
                 Path entryDir = Files.createDirectories(nextDir(hashDir));
-                write(keyBytes, entryDir.resolve(keyFilename));
-                write(valueBytes, entryDir.resolve(valFilename));
+                write(keyBytes, entryDir.resolve(KEY_FILENAME));
+                write(valueBytes, entryDir.resolve(VALUE_FILENAME));
             }
         });
     }
 
     private Path nextDir(Path hashDir) {
         return rethrowIOExAsIoErr(() -> {
-            Path file = hashDir.resolve(lastEntryNumberFilename);
+            Path file = hashDir.resolve(LAST_ENTRY_NO_FILENAME);
             final String nextInt = String.valueOf
                     (Files.exists(file) ? 1 + Long.parseLong(Files.lines(file).findFirst().get()) : 1);
             Files.write(file, Collections.singleton(nextInt));
@@ -82,7 +84,7 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
 
     private Optional<Path> getExistingValueFile(Path hashDir, byte[] key) {
         return getEntryFor(hashDir, key)
-                .map(entryDir -> entryDir.resolve(valFilename));
+                .map(entryDir -> entryDir.resolve(VALUE_FILENAME));
     }
 
     Optional<Path> getEntryFor(Path hashDir, byte[] key) {
@@ -102,7 +104,7 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     }
 
     byte[] keyBytes(Path entryDir) throws IOException {
-        return Files.readAllBytes(entryDir.resolve(keyFilename));
+        return Files.readAllBytes(entryDir.resolve(KEY_FILENAME));
     }
 
     Path hashDir(byte[] key) {
@@ -143,21 +145,22 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     }
 
     <T> byte[] bytes(T object) {
-        if (object == null) return new byte[]{};
-        if (object instanceof byte[]) {
+        if (object == null) {
+            return EMPTY_BYTE_ARRAY;
+        } else if (object instanceof byte[]) {
             return (byte[]) object;
-        }
-        if (!(object instanceof Serializable)) {
-            throw new UncheckedIOException(new NotSerializableException(object.getClass().getName()));
-        }
-        return rethrowIOExAsIoErr(() -> {
-            Serializable ser = (Serializable) object;
-            try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                 ObjectOutput out = new ObjectOutputStream(bos)) {
-                out.writeObject(ser);
-                return bos.toByteArray();
-            }
-        });
+        } else
+            return rethrowIOExAsIoErr(() -> {
+                if (!(object instanceof Serializable)) {
+                    throw new NotSerializableException(object.getClass().getName());
+                }
+                Serializable ser = (Serializable) object;
+                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                     ObjectOutput out = new ObjectOutputStream(bos)) {
+                    out.writeObject(ser);
+                    return bos.toByteArray();
+                }
+            });
     }
 
 }

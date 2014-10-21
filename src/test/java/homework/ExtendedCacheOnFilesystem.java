@@ -32,8 +32,8 @@ public class ExtendedCacheOnFilesystem<K,V> extends FileSystemHashCache<K,V> imp
                                 pathsStream.filter(Files::isDirectory)
                                         .filter(path -> path.getParent() != null)
                                         .filter(path -> basePath.equals(path.getParent().getParent()))
-                                        .filter(path -> Files.exists(path.resolve(keyFilename)))
-                                        .filter(path -> Files.exists(path.resolve(valFilename)))
+                                        .filter(path -> Files.exists(path.resolve(KEY_FILENAME)))
+                                        .filter(path -> Files.exists(path.resolve(VALUE_FILENAME)))
                                         .map(entryPath -> rethrowIOExAsIoErr(() -> {
                                             K k = (K) fromBytes(keyBytes(entryPath));
                                             V v = get(k);
@@ -60,8 +60,8 @@ public class ExtendedCacheOnFilesystem<K,V> extends FileSystemHashCache<K,V> imp
         if (exists)
             rethrowIOExAsIoErr((IORunnable) () -> {
                 Path entryDir = entryDirOpt.get();
-                Files.delete(entryDir.resolve(keyFilename));
-                Files.delete(entryDir.resolve(valFilename));
+                Files.delete(entryDir.resolve(KEY_FILENAME));
+                Files.delete(entryDir.resolve(VALUE_FILENAME));
                 Files.delete(entryDir);
             });
         return exists;
