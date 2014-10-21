@@ -7,6 +7,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
+import static homework.TestUtils.createRoot;
+
 /**
  * Created by dnmaras on 10/19/14.
  */
@@ -25,8 +27,7 @@ public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String
 
     @Override
     protected ConcurrentMap<String, String> makeEmptyMap() throws UnsupportedOperationException {
-        ExtendedCache<String, String> cache = new CacheFactoryImpl<String, String>().create();
-        return new ConcurrentMapBasedOnCache<String, String>(cache);
+        return new ConcurrentMapBasedOnCache<>(new ExtendedSegmentedCache<>(createRoot(), 9090));
     }
 
     @Override

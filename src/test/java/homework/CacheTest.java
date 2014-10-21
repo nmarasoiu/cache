@@ -3,19 +3,19 @@ package homework;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ServiceLoader;
+
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by dnmaras on 10/13/14.
  */
 public abstract class CacheTest<K, V> {
-    //I would use a IoC container to inject the cache
-    private CacheFactory<K, V> cacheFactory = new CacheFactoryImpl<>();
     private Cache<K, V> cache;
 
     @Before
     public void arrange() {
-        cache = cacheFactory.create();
+        cache = new RawSegmentedCache<>(TestUtils.createRoot(), 9090);
     }
 
     @Test
