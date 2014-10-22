@@ -42,9 +42,19 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
         Optional<Path> maybeValueFile = getExistingValueFile(hashDir(keyBytes), keyBytes);
         return maybeValueFile.map(
                 (Path valuePath) ->
-                        rethrowIOExAsIoErr(() ->
-                                (V) fromBytes(Files.readAllBytes(valuePath))))
+                        readObjectFromPath(valuePath))
                 .orElse(null);
+    }
+
+    private V readObjectFromPath(Path path) {
+        return rethrowIOExAsIoErr(() -> {
+            try (InputStream fileStream = Files.newInputStream(path);
+                 ObjectInput in = new ObjectInputStream(fileStream)) {
+                return (V) in.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
@@ -130,18 +140,6 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    Object fromBytes(byte[] bytes) {
-        return rethrowIOExAsIoErr(() -> {
-            if (bytes.length == 0) return null;
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-                 ObjectInput in = new ObjectInputStream(bis)) {
-                return in.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        });
     }
 
     <T> byte[] bytes(T object) {
