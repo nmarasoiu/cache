@@ -18,7 +18,7 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
     protected List<ExtendedCache<K, V>> createShardMaps() {
         List<ExtendedCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
-            ExtendedCache<K, V> memCache = new ExtCacheOnMap<>(lruMap());
+            ExtendedCache<K, V> memCache = new ExtCacheOnMap<>(new MapBasedOnCache<>(theMemCache()));
             ExtendedCache<K, V> fsCache = new ExtendedCacheOnFilesystem<K, V>(basePath.resolve(String.valueOf(i)));
             shards.add(new ExtendedLayeredCache<>(memCache, fsCache));
         }

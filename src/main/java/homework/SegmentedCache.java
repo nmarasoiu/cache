@@ -54,7 +54,7 @@ public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implem
     }
 
 
-    Map<K, V> lruMap() {
+    Cache<K, V> theMemCache() {
         return new MemoryCacheMap<K, V>(stalenessMillis, maxObjects);
     }
 }
