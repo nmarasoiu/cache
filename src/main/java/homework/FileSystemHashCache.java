@@ -82,9 +82,6 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
 
     private V readObjectFromFile(Path path) {
         return rethrowIOExAsIoErr(() -> {
-            if (Files.size(path) == 0) {
-                return null;
-            }
             try (InputStream fileInStream = Files.newInputStream(path);
                  ObjectInput objectInStream = new ObjectInputStream(fileInStream)) {
                 return (V) objectInStream.readObject();
@@ -96,9 +93,6 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
 
     private void writeObjectToFile(Object value, Path path) {
         rethrowIOExAsIoErr(() -> {
-            if (value == null) {
-                Files.createFile(path);
-            }
             try (OutputStream fileOutStream = Files.newOutputStream(path);
                  ObjectOutput objOutStream = new ObjectOutputStream(fileOutStream)) {
                 objOutStream.writeObject(value);
