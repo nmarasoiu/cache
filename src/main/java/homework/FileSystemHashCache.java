@@ -39,43 +39,28 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     @Override
     public V get(K key) {
         byte[] keyBytes = bytes(key);
-        Optional<Path> maybeValueFile = getExistingValueFile(hashDir(keyBytes), keyBytes);
-        return maybeValueFile.map(
-                (Path valuePath) ->
-                        readObjectFromPath(valuePath))
+        return getExistingValueFile(hashDir(keyBytes), keyBytes)
+                .map((Path valuePath) -> readObjectFromFile(valuePath))
                 .orElse(null);
-    }
-
-    private V readObjectFromPath(Path path) {
-        return rethrowIOExAsIoErr(() -> {
-            if (Files.size(path) == 0) {
-                return null;
-            }
-            try (InputStream fileStream = Files.newInputStream(path);
-                 ObjectInput in = new ObjectInputStream(fileStream)) {
-                return (V) in.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        });
     }
 
     @Override
     public void put(K key, V value) {
         byte[] keyBytes = bytes(key);
-        byte[] valueBytes = bytes(value);
         Path hashDir = (hashDir(keyBytes));
         Optional<Path> maybeValueFile = getExistingValueFile(hashDir, keyBytes);
         rethrowIOExAsIoErr(() -> {
+            final Path valuePath;
             if (maybeValueFile.isPresent()) {
-                Files.delete(maybeValueFile.get());
-                write(valueBytes, maybeValueFile.get());
+                valuePath = maybeValueFile.get();
+                Files.delete(valuePath);
             } else {
                 Files.createDirectories(hashDir);
                 Path entryDir = Files.createDirectories(nextDir(hashDir));
                 write(keyBytes, entryDir.resolve(KEY_FILENAME));
-                write(valueBytes, entryDir.resolve(VALUE_FILENAME));
+                valuePath = entryDir.resolve(VALUE_FILENAME);
             }
+            writeObjectToFile(value, valuePath);
         });
     }
 
@@ -93,6 +78,33 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
         try (InputStream keyStream = new ByteArrayInputStream((source))) {
             Files.copy(keyStream, path);
         }
+    }
+
+    private V readObjectFromFile(Path path) {
+        return rethrowIOExAsIoErr(() -> {
+            if (Files.size(path) == 0) {
+                return null;
+            }
+            try (InputStream fileInStream = Files.newInputStream(path);
+                 ObjectInput objectInStream = new ObjectInputStream(fileInStream)) {
+                return (V) objectInStream.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private void writeObjectToFile(Object value, Path path) {
+        rethrowIOExAsIoErr(() -> {
+            if (value == null) {
+                Files.createFile(path);
+            }
+            try (OutputStream fileOutStream = Files.newOutputStream(path);
+                 ObjectOutput objOutStream = new ObjectOutputStream(fileOutStream)) {
+                objOutStream.writeObject(value);
+            }
+        });
+
     }
 
     private Optional<Path> getExistingValueFile(Path hashDir, byte[] key) {
