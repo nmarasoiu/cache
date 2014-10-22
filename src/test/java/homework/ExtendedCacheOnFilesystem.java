@@ -40,13 +40,11 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
                                         .filter(path -> Files.exists(path.resolve(VALUE_FILENAME)))
                                         .map(entryPath -> rethrowIOExAsIoErr(() -> {
                                             K k = (K) fromBytes(keyBytes(entryPath));
-                                            V v = get(k);
-                                            return new AbstractMap.SimpleEntry<K, V>(k, v) {
+                                            return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
                                                 @Override
                                                 public V setValue(V value) {
-                                                    V old = get(k);
                                                     put(k, value);
-                                                    return old;
+                                                    return super.setValue(value);
                                                 }
                                             };
                                         })));

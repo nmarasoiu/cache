@@ -3,6 +3,7 @@ package homework;
 import org.mapdb.MapInterfaceTest;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -14,20 +15,7 @@ import static homework.TestUtils.createRoot;
  */
 public class MapTest extends MapInterfaceTest<String,String> {
 
-    /**
-     * Constructor with an explicit {@code supportsIteratorRemove} parameter.
-     */
-    public MapTest() {
-        super(
-                true //allowsNullKeys ***
-                , true// , allowsNullValues ***
-                , true// , supportsPut,****
-                , true// supportsRemove,*
-                , true// supportsClear,
-                , true// supportsIteratorRemove,
-                , true// supportsEntrySetValue  ***
-        );
-    }
+    public static final List<String> STRINGS = Arrays.asList(UUID.randomUUID().toString().split("-"));
 
     @Override
     protected Map<String,String> makeEmptyMap() throws UnsupportedOperationException {
@@ -37,12 +25,7 @@ public class MapTest extends MapInterfaceTest<String,String> {
     @Override
     protected Map<String,String> makePopulatedMap() throws UnsupportedOperationException {
         Map<String,String> map = makeEmptyMap();
-        Arrays.asList(UUID.randomUUID().toString().split("-")).stream().forEach(new Consumer<String>() {
-            @Override
-            public void accept(String s) {
-                map.put(s, s);
-            }
-        });
+        STRINGS.stream().forEach(s -> map.put(s, s));
         return map;
     }
 

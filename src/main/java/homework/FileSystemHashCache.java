@@ -48,6 +48,9 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
 
     private V readObjectFromPath(Path path) {
         return rethrowIOExAsIoErr(() -> {
+            if (Files.size(path) == 0) {
+                return null;
+            }
             try (InputStream fileStream = Files.newInputStream(path);
                  ObjectInput in = new ObjectInputStream(fileStream)) {
                 return (V) in.readObject();

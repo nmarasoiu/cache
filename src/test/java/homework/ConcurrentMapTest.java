@@ -3,6 +3,7 @@ package homework;
 import org.mapdb.ConcurrentMapInterfaceTest;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
@@ -13,17 +14,8 @@ import static homework.TestUtils.createRoot;
  * Created by dnmaras on 10/19/14.
  */
 public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String> {
-    public ConcurrentMapTest() {
-        super(
-                true //allowsNullKeys ***
-                , true// , allowsNullValues ***
-                , true// , supportsPut,****
-                , true// supportsRemove,*
-                , true// supportsClear,
-                , true// supportsIteratorRemove,
-                , true// supportsEntrySetValue  ***
-        );
-    }
+
+    public static final List<String> STRINGS = Arrays.asList(UUID.randomUUID().toString().split("-"));
 
     @Override
     protected ConcurrentMap<String, String> makeEmptyMap() throws UnsupportedOperationException {
@@ -33,7 +25,7 @@ public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String
     @Override
     protected ConcurrentMap<String,String> makePopulatedMap() throws UnsupportedOperationException {
         ConcurrentMap<String, String> m = makeEmptyMap();
-        Arrays.asList(UUID.randomUUID().toString().split("-")).stream().forEach(new Consumer<String>() {
+        STRINGS.stream().forEach(new Consumer<String>() {
             @Override
             public void accept(String s) {
                 m.put(s, s);
