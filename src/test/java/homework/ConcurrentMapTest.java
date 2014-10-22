@@ -25,12 +25,7 @@ public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String
     @Override
     protected ConcurrentMap<String,String> makePopulatedMap() throws UnsupportedOperationException {
         ConcurrentMap<String, String> m = makeEmptyMap();
-        STRINGS.stream().forEach(new Consumer<String>() {
-            @Override
-            public void accept(String s) {
-                m.put(s, s);
-            }
-        });
+        STRINGS.stream().forEach(s -> m.put(s, s));
         return m;
     }
 

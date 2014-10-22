@@ -9,7 +9,6 @@ public class MemoryCacheMap<K, V> extends AbstractMap<K, V> implements Map<K, V>
     private Map<K, V> dataMap;
     private Map<Object, Long> readAccessOrderedMap;
     private Map<Object, Long> writeAccessOrderedMap;
-    private Long currentTimestamp;
     private long acceptableStalenessMillis;
 
     public MemoryCacheMap(long acceptableStalenessMillis, long maxObjects) {
@@ -37,29 +36,28 @@ public class MemoryCacheMap<K, V> extends AbstractMap<K, V> implements Map<K, V>
 
     @Override
     public V get(Object key) {
-        return cacheOp(key, readAccessOrderedMap, () -> dataMap.get(key));
+        return cacheOp(key, () -> dataMap.get(key), readAccessOrderedMap);
     }
 
     @Override
     public V put(K key, V value) {
-        return cacheOp(key, writeAccessOrderedMap, () -> dataMap.put(key, value));
+        return cacheOp(key, () -> dataMap.put(key, value), writeAccessOrderedMap);
     }
 
-    private V cacheOp(Object key, Map<Object, Long> accessMap, Callable<V> callable) {
-        currentTimestamp = System.currentTimeMillis();
-        deleteStaleEntries();
-        accessMap.put(key, currentTimestamp);
+    private V cacheOp(Object key, Callable<V> callable, Map<Object, Long> opAccessMap) {
+        long currentTimestamp = System.currentTimeMillis();
+        opAccessMap.put(key, currentTimestamp);
+        deleteStaleEntries(currentTimestamp);
         return callable.call();
     }
 
-    private void deleteStaleEntries() {
-        writeAccessOrderedMap
-                .entrySet().stream()
-                .filter(entry -> currentTimestamp - entry.getValue() > acceptableStalenessMillis)
-                .findFirst()
+    private void deleteStaleEntries(long currentTimestamp) {
+        writeAccessOrderedMap.entrySet().stream().findFirst()
                 .ifPresent(entry -> {
-                    remove(entry.getKey());
-                    deleteStaleEntries();
+                    if (currentTimestamp - entry.getValue() > acceptableStalenessMillis) {
+                        remove(entry.getKey());
+                        deleteStaleEntries(currentTimestamp);
+                    }
                 });
     }
 
