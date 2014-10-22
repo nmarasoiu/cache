@@ -16,7 +16,7 @@ public class ExtCacheOnMap<K,V> extends CacheBasedOnMap<K, V> implements Extende
     }
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
-        return reify(StreamSupport.stream(underlyingMap.entrySet().spliterator(), false));
+        return reify(underlyingMap.entrySet().stream());
     }
 
     @Override

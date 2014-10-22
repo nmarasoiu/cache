@@ -7,8 +7,8 @@ import java.util.*;
  * Created by dnmaras on 10/19/14.
  */
 public class RawSegmentedCache<K,V> extends SegmentedCache<K,V,Cache<K,V>> {
-    public RawSegmentedCache(Path basePath, double maxObjects) {
-        super(basePath, maxObjects);
+    public RawSegmentedCache(Path basePath, double maxObjects, long stalenessMillis) {
+        super(basePath, maxObjects, stalenessMillis);
     }
 
     @Override
@@ -20,13 +20,5 @@ public class RawSegmentedCache<K,V> extends SegmentedCache<K,V,Cache<K,V>> {
             shards.add(new LayeredCache<>(memCache, fsCache));
         }
         return Collections.unmodifiableList(shards);
-    }
-    private Map<K, V> lruMap() {
-        return new LinkedHashMap<K, V>(256, .75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-                return size() >= maxObjects;
-            }
-        };
     }
 }

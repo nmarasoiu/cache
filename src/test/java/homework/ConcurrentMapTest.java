@@ -19,7 +19,7 @@ public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String
 
     @Override
     protected ConcurrentMap<String, String> makeEmptyMap() throws UnsupportedOperationException {
-        return new ConcurrentMapBasedOnCache<>(new ExtendedSegmentedCache<>(createRoot(), 9090));
+        return new ConcurrentMapBasedOnCache<>(new ExtendedSegmentedCache<>(createRoot(), 9090, 4000));
     }
 
     @Override

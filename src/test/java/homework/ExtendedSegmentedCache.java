@@ -10,8 +10,8 @@ import static homework.utils.StreamUtils.reify;
  * Created by dnmaras on 10/19/14.
  */
 public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedCache<K, V>> implements ExtendedCache<K, V> {
-    public ExtendedSegmentedCache(Path basePath, double maxObjects) {
-        super(basePath, maxObjects);
+    public ExtendedSegmentedCache(Path basePath, double maxObjects, long stalenessMillis) {
+        super(basePath, maxObjects, stalenessMillis);
     }
 
     @Override
@@ -23,15 +23,6 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
             shards.add(new ExtendedLayeredCache<>(memCache, fsCache));
         }
         return Collections.unmodifiableList(shards);
-    }
-
-    private Map<K, V> lruMap() {
-        return new LinkedHashMap<K, V>(256, .75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-                return size() >= maxObjects;
-            }
-        };
     }
 
     @Override

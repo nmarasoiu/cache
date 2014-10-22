@@ -15,7 +15,7 @@ public abstract class CacheTest<K, V> {
 
     @Before
     public void arrange() {
-        cache = new RawSegmentedCache<>(TestUtils.createRoot(), 9090);
+        cache = new RawSegmentedCache<>(TestUtils.createRoot(), 9090, 5000);
     }
 
     @Test

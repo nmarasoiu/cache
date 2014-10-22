@@ -5,6 +5,7 @@ import homework.markers.ThreadSafe;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by dnmaras on 10/17/14.
@@ -13,12 +14,14 @@ import java.util.List;
 public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implements Cache<K, V> {
     protected static final int concurrencyFactor = 16;
     protected List<CacheType> shards;
-    protected double maxObjects;
+    protected long maxObjects;
     protected Path basePath;
+    protected long stalenessMillis;
 
-    public SegmentedCache(Path basePath, double maxObjects) {
+    public SegmentedCache(Path basePath, double maxObjects, long stalenessMillis) {
         this.basePath = basePath;
-        this.maxObjects = .99 * maxObjects / concurrencyFactor;
+        this.stalenessMillis = stalenessMillis;
+        this.maxObjects = (long) (.99 * maxObjects / concurrencyFactor);
         shards = createShardMaps();
     }
 
@@ -48,5 +51,10 @@ public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implem
 
     public List<CacheType> getShards() {
         return shards;
+    }
+
+
+    Map<K, V> lruMap() {
+        return new MemoryCacheMap<K, V>(stalenessMillis, maxObjects);
     }
 }
