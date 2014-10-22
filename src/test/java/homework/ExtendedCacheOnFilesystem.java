@@ -2,6 +2,9 @@ package homework;
 
 import homework.utils.IORunnable;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,7 +19,7 @@ import static homework.utils.StreamUtils.reify;
 /**
  * Created by dnmaras on 10/21/14.
  */
-public class ExtendedCacheOnFilesystem<K,V> extends FileSystemHashCache<K,V> implements ExtendedCache<K,V> {
+public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     public ExtendedCacheOnFilesystem(FileSystem fs, String path) {
         super(fs, path);
     }
@@ -24,6 +27,7 @@ public class ExtendedCacheOnFilesystem<K,V> extends FileSystemHashCache<K,V> imp
     public ExtendedCacheOnFilesystem(Path basePath) {
         super(basePath);
     }
+
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
         return rethrowIOExAsIoErr(() -> {
@@ -65,6 +69,18 @@ public class ExtendedCacheOnFilesystem<K,V> extends FileSystemHashCache<K,V> imp
                 Files.delete(entryDir);
             });
         return exists;
+    }
+
+    Object fromBytes(byte[] bytes) {
+        return rethrowIOExAsIoErr(() -> {
+            if (bytes.length == 0) return null;
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+                 ObjectInput in = new ObjectInputStream(bis)) {
+                return in.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
 }
