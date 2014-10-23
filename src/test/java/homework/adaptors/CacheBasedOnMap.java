@@ -1,5 +1,6 @@
-package homework;
+package homework.adaptors;
 
+import homework.Cache;
 import homework.markers.NonThreadSafe;
 
 import java.util.Map;

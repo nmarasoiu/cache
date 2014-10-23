@@ -1,8 +1,10 @@
-package homework;
+package homework.adaptors;
+
+import homework.ExtendedCache;
 
 import java.util.Map;
 import java.util.stream.Stream;
-import static homework.StreamUtils.reify;
+import static homework.utils.StreamUtils.reify;
 
 /**
  * Created by dnmaras on 10/21/14.

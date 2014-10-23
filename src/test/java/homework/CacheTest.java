@@ -1,9 +1,9 @@
 package homework;
 
+import homework.layered.RawSegmentedCache;
+import homework.utils.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ServiceLoader;
 
 import static org.junit.Assert.assertEquals;
 

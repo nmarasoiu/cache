@@ -1,5 +1,6 @@
-package homework;
+package homework.filesystem;
 
+import homework.Cache;
 import homework.markers.NonThreadSafe;
 
 import java.io.*;
@@ -26,12 +27,8 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     public static final String LAST_ENTRY_NO_FILENAME = "last.txt";
     protected final Path basePath;
 
-    public FileSystemHashCache(FileSystem fs, String path) {
-        this(fs.getPath(path));
-    }
-
     public FileSystemHashCache(Path basePath) {
-        this.basePath = rethrowIOExAsIoErr(() -> Files.createDirectories(basePath));
+        this.basePath = rethrowIOExAsIoErr(() -> Files.createDirectories(basePath.normalize()));
     }
 
     @Override

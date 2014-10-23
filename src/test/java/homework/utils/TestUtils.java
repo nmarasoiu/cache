@@ -1,4 +1,4 @@
-package homework;
+package homework.utils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

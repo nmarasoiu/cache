@@ -1,4 +1,6 @@
-package homework;
+package homework.memory;
+
+import homework.Cache;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;

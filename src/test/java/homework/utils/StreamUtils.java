@@ -1,4 +1,4 @@
-package homework;
+package homework.utils;
 
 import java.util.Map;
 import java.util.Optional;

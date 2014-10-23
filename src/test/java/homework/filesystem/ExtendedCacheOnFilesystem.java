@@ -1,11 +1,11 @@
-package homework;
+package homework.filesystem;
 
+import homework.ExtendedCache;
 import homework.utils.IORunnable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.AbstractMap;
@@ -13,16 +13,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static homework.StreamUtils.reify;
+import static homework.utils.StreamUtils.reify;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 
 /**
  * Created by dnmaras on 10/21/14.
  */
 public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
-    public ExtendedCacheOnFilesystem(FileSystem fs, String path) {
-        super(fs, path);
-    }
 
     public ExtendedCacheOnFilesystem(Path basePath) {
         super(basePath);

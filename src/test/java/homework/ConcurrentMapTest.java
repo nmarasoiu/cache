@@ -1,14 +1,15 @@
 package homework;
 
+import homework.adaptors.MapBasedOnCache;
+import homework.layered.ExtendedSegmentedCache;
 import org.mapdb.ConcurrentMapInterfaceTest;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Consumer;
 
-import static homework.TestUtils.createRoot;
+import static homework.utils.TestUtils.createRoot;
 
 /**
  * Created by dnmaras on 10/19/14.

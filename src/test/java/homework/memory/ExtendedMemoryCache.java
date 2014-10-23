@@ -1,4 +1,7 @@
-package homework;
+package homework.memory;
+
+import homework.ExtendedCache;
+import homework.memory.MemoryCache;
 
 import java.util.Map;
 import java.util.stream.Stream;

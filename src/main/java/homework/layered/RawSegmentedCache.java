@@ -1,4 +1,8 @@
-package homework;
+package homework.layered;
+
+import homework.Cache;
+import homework.filesystem.FileSystemHashCache;
+import homework.memory.MemoryCache;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -8,7 +12,7 @@ import java.util.List;
 /**
  * Created by dnmaras on 10/19/14.
  */
-public class RawSegmentedCache<K,V> extends SegmentedCache<K,V,Cache<K,V>> {
+public class RawSegmentedCache<K,V> extends SegmentedCache<K,V, Cache<K,V>> {
     public RawSegmentedCache(Path basePath, double maxObjects, long stalenessMillis) {
         super(basePath, maxObjects, stalenessMillis);
     }

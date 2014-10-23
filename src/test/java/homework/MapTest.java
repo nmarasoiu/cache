@@ -1,14 +1,15 @@
 package homework;
 
+import homework.adaptors.MapBasedOnCache;
+import homework.filesystem.ExtendedCacheOnFilesystem;
 import org.mapdb.MapInterfaceTest;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
 
-import static homework.TestUtils.createRoot;
+import static homework.utils.TestUtils.createRoot;
 
 /**
  * Created by dnmaras on 10/18/14.

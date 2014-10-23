@@ -1,4 +1,6 @@
-package homework;
+package homework.adaptors;
+
+import homework.ExtendedCache;
 
 import java.util.*;
 

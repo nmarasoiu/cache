@@ -1,10 +1,14 @@
-package homework;
+package homework.layered;
+
+import homework.ExtendedCache;
+import homework.filesystem.ExtendedCacheOnFilesystem;
+import homework.memory.ExtendedMemoryCache;
 
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static homework.StreamUtils.reify;
+import static homework.utils.StreamUtils.reify;
 
 /**
  * Created by dnmaras on 10/19/14.
@@ -18,7 +22,7 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
     protected List<ExtendedCache<K, V>> createShardMaps() {
         List<ExtendedCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
-            ExtendedCache<K, V> memCache = new ExtCacheOnMap<>(new MapBasedOnCache<>(theMemCache()));
+            ExtendedCache<K, V> memCache = theMemCache();
             ExtendedCache<K, V> fsCache = new ExtendedCacheOnFilesystem<K, V>(basePath.resolve(String.valueOf(i)));
             shards.add(new ExtendedLayeredCache<>(memCache, fsCache));
         }
@@ -27,7 +31,7 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
 
     @Override
     protected ExtendedCache<K, V> theMemCache() {
-        return new ExtendedMemoryCache(maxObjects, stalenessMillis);
+        return new ExtendedMemoryCache<K,V>(maxObjects, stalenessMillis);
     }
 
     @Override
