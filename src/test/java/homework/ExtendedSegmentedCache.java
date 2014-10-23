@@ -26,6 +26,11 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
     }
 
     @Override
+    protected ExtendedCache<K, V> theMemCache() {
+        return new ExtendedMemoryCache(maxObjects, stalenessMillis);
+    }
+
+    @Override
     public Stream<Map.Entry<K, V>> entryStream() {
         Stream<Map.Entry<K, V>> entryStream = getShards().stream().flatMap(ExtendedCache::entryStream);
         return reify(entryStream);

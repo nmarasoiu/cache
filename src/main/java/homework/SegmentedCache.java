@@ -5,7 +5,6 @@ import homework.markers.ThreadSafe;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by dnmaras on 10/17/14.
@@ -35,10 +34,6 @@ public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implem
         shard(key).put((key), (value));
     }
 
-    protected CacheType shard(K key) {
-        return getShards().get(modulo(key));
-    }
-
     protected int modulo(K key) {
         return Math.abs(hash(key)) % concurrencyFactor;
     }
@@ -47,14 +42,15 @@ public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implem
         return key == null ? 0 : (key).hashCode();
     }
 
+    protected CacheType shard(K key) {
+        return getShards().get(modulo(key));
+    }
+
     abstract protected List<CacheType> createShardMaps();
+
+    abstract protected CacheType theMemCache() ;
 
     public List<CacheType> getShards() {
         return shards;
-    }
-
-
-    Cache<K, V> theMemCache() {
-        return new MemoryCacheMap<K, V>(stalenessMillis, maxObjects);
     }
 }

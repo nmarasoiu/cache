@@ -21,4 +21,10 @@ public class RawSegmentedCache<K,V> extends SegmentedCache<K,V,Cache<K,V>> {
         }
         return Collections.unmodifiableList(shards);
     }
+
+
+    @Override
+    protected Cache<K,V> theMemCache() {
+        return new MemoryCache<K, V>(stalenessMillis, maxObjects);
+    }
 }

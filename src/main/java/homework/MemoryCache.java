@@ -5,13 +5,13 @@ import java.util.*;
 /**
  * Created by dnmaras on 10/22/14.
  */
-public class MemoryCacheMap<K, V> implements Cache<K, V> {
-    private Map<K, V> dataMap;
+public class MemoryCache<K, V> implements Cache<K, V> {
+    protected Map<K, V> dataMap;
     private Map<K, Long> readAccessOrderedMap;
     private Map<K, Long> writeAccessOrderedMap;
     private long acceptableStalenessMillis;
 
-    public MemoryCacheMap(long acceptableStalenessMillis, long maxObjects) {
+    public MemoryCache(long acceptableStalenessMillis, long maxObjects) {
         this.acceptableStalenessMillis = acceptableStalenessMillis;
         readAccessOrderedMap = lruMap(maxObjects);
         writeAccessOrderedMap = new LinkedHashMap<>();
@@ -60,7 +60,7 @@ public class MemoryCacheMap<K, V> implements Cache<K, V> {
             @Override
             protected boolean removeEldestEntry(Map.Entry<A, B> eldest) {
                 while (size() >= maxObjects) {
-                    MemoryCacheMap.this.remove(eldest.getKey());
+                    MemoryCache.this.remove(eldest.getKey());
                 }
                 return false;
             }
