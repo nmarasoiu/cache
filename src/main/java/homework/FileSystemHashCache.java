@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
-import static homework.utils.StreamUtils.reify;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -25,7 +24,6 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     public static final String VALUE_FILENAME = "value.bin";
     public static final String KEY_FILENAME = "key.bin";
     public static final String LAST_ENTRY_NO_FILENAME = "last.txt";
-    public static final byte[] EMPTY_BYTE_ARRAY = new byte[]{};
     protected final Path basePath;
 
     public FileSystemHashCache(FileSystem fs, String path) {
@@ -110,9 +108,9 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
         return Files.exists(hashDir) ?
                 rethrowIOExAsIoErr(() -> {
                     try (Stream<Path> list = Files.list(hashDir)) {
-                        return reify(list.filter(Files::isDirectory)
-                                .filter(entryDir -> isThisMyKey(key, entryDir))
-                                .findFirst());
+                        return list.filter(Files::isDirectory)
+                                                .filter(entryDir -> isThisMyKey(key, entryDir))
+                                                .findFirst();
                     }
                 })
                 : Optional.empty();

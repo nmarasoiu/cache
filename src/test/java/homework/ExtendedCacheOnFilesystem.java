@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static homework.StreamUtils.reify;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
-import static homework.utils.StreamUtils.reify;
 
 /**
  * Created by dnmaras on 10/21/14.
@@ -32,22 +32,22 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
     public Stream<Map.Entry<K, V>> entryStream() {
         return rethrowIOExAsIoErr(() -> {
                     try (Stream<Path> pathsStream = Files.walk(basePath)) {
-                        return reify(
-                                pathsStream.filter(Files::isDirectory)
-                                        .filter(path -> path.getParent() != null)
-                                        .filter(path -> basePath.equals(path.getParent().getParent()))
-                                        .filter(path -> Files.exists(path.resolve(KEY_FILENAME)))
-                                        .filter(path -> Files.exists(path.resolve(VALUE_FILENAME)))
-                                        .map(entryPath -> rethrowIOExAsIoErr(() -> {
-                                            K k = (K) fromBytes(keyBytes(entryPath));
-                                            return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
-                                                @Override
-                                                public V setValue(V value) {
-                                                    put(k, value);
-                                                    return super.setValue(value);
-                                                }
-                                            };
-                                        })));
+                        return reify(pathsStream
+                                .filter(Files::isDirectory)
+                                .filter(path -> path.getParent() != null)
+                                .filter(path -> basePath.equals(path.getParent().getParent()))
+                                .filter(path -> Files.exists(path.resolve(KEY_FILENAME)))
+                                .filter(path -> Files.exists(path.resolve(VALUE_FILENAME)))
+                                .map(entryPath -> rethrowIOExAsIoErr(() -> {
+                                    K k = (K) fromBytes(keyBytes(entryPath));
+                                    return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
+                                        @Override
+                                        public V setValue(V value) {
+                                            put(k, value);
+                                            return super.setValue(value);
+                                        }
+                                    };
+                                })));
                     }
                 }
         );

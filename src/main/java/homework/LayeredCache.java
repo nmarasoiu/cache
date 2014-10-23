@@ -21,8 +21,6 @@ public class LayeredCache<K, V, CacheType extends Cache<K, V>> implements Cache<
     public V get(K key) {
         return underLock(() -> {
             V value = memCache.get(key);
-            //todo:distibguish null from not exists,pb ori pun doar Stat ori adaug contains
-            //poate fi privita ca o prb de optimizare pt ca de adus valoarea o aduce din filesystem mereu in caz de null
             if (value == null) {
                 value = fsCache.get(key);
                 memCache.put(key, value);

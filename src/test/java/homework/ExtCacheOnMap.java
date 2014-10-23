@@ -2,9 +2,7 @@ package homework;
 
 import java.util.Map;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static homework.utils.StreamUtils.reify;
+import static homework.StreamUtils.reify;
 
 /**
  * Created by dnmaras on 10/21/14.

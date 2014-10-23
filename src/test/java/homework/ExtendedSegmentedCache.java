@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static homework.utils.StreamUtils.reify;
+import static homework.StreamUtils.reify;
 
 /**
  * Created by dnmaras on 10/19/14.

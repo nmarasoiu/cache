@@ -1,4 +1,4 @@
-package homework.utils;
+package homework;
 
 import java.util.Map;
 import java.util.Optional;
@@ -14,7 +14,4 @@ public final class StreamUtils {
         return Stream.of(entryStream.toArray(Map.Entry[]::new));
     }
 
-    public static <T> Optional<T> reify(Optional<T> optional) {
-        return Optional.ofNullable(optional.orElse(null));
-    }
 }
