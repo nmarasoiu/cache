@@ -152,22 +152,13 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     }
 
     <T> byte[] bytes(T object) {
-        if (object == null) {
-            return EMPTY_BYTE_ARRAY;
-        } else if (object instanceof byte[]) {
-            return (byte[]) object;
-        } else
-            return rethrowIOExAsIoErr(() -> {
-                if (!(object instanceof Serializable)) {
-                    throw new NotSerializableException(object.getClass().getName());
-                }
-                Serializable ser = (Serializable) object;
-                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                     ObjectOutput out = new ObjectOutputStream(bos)) {
-                    out.writeObject(ser);
-                    return bos.toByteArray();
-                }
-            });
+        return rethrowIOExAsIoErr(() -> {
+            try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                 ObjectOutput out = new ObjectOutputStream(bos)) {
+                out.writeObject(object);
+                return bos.toByteArray();
+            }
+        });
     }
 
 }

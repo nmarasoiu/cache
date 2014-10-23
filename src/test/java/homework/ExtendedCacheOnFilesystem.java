@@ -70,9 +70,7 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
     }
     Object fromBytes(byte[] bytes) {
         return rethrowIOExAsIoErr(() -> {
-            if (bytes.length == 0) return null;
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-                 ObjectInput in = new ObjectInputStream(bis)) {
+            try (ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
                 return in.readObject();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
