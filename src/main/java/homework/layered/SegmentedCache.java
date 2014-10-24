@@ -5,6 +5,7 @@ import homework.Cache;
 import homework.markers.ThreadSafe;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,7 +23,7 @@ public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implem
         this.basePath = basePath;
         this.stalenessMillis = stalenessMillis;
         this.maxObjects = (long) (.99 * maxObjects / concurrencyFactor);
-        shards = createShardMaps();
+        shards = Collections.unmodifiableList(createShardMaps());
     }
 
     @Override
