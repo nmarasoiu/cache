@@ -10,11 +10,15 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Created by dnmaras on 10/22/14.
+ * Entries are evicted from dataMap based on:
+ * 1. The last-write-time should not be older than cacheConfig.getMaxStalePeriod.
+ * 2. The number of entries should not exceed cacheConfig.getMaxObjects.
+ * <p/>
+ * The elements to evict for condition 2 are the ones with oldest read-time.
  */
 public class MemoryCache<K, V> implements Cache<K, V> {
     protected final Map<K, V> dataMap;
-    protected final Map<K, Instant> readAccessOrderedMap;
+    protected final Map<K, Boolean> readAccessOrderedMap;
     protected final Map<K, Instant> writeAccessOrderedMap;
     protected final CacheConfig cacheConfig;
 
@@ -27,37 +31,22 @@ public class MemoryCache<K, V> implements Cache<K, V> {
 
     @Override
     public V get(K key) {
-        return cacheOp(key,
-                () -> dataMap.get(key),
-                readAccessOrderedMap,
-                Instant.now());
+        readAccessOrderedMap.put(key, Boolean.TRUE);
+        deleteStaleEntries();
+        return dataMap.get(key);
     }
 
     @Override
     public void put(K key, V value, Instant lastModifiedTime) {
-        cacheOp(key,
-                () -> dataMap.put(key, value),
-                writeAccessOrderedMap,
-                lastModifiedTime);
+        writeAccessOrderedMap.put(key, lastModifiedTime);
+        dataMap.put(key, value);
+        deleteStaleEntries();
     }
 
     @Override
     public Optional<Instant> getLastModifiedMillis(K key) {
         Instant value = writeAccessOrderedMap.get(key);
         return value != null ? Optional.of(value) : Optional.empty();
-    }
-
-    interface Callable<V> extends java.util.concurrent.Callable<V> {
-        V call();
-    }
-
-    private V cacheOp(K key,
-                      Callable<V> callable,
-                      Map<K, Instant> opAccessMap,
-                      Instant lastModTime) {
-        opAccessMap.put(key, lastModTime);
-        deleteStaleEntries();
-        return callable.call();
     }
 
     private void deleteStaleEntries() {
