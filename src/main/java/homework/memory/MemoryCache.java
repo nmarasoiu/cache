@@ -1,54 +1,64 @@
 package homework.memory;
 
 import homework.Cache;
+import homework.dto.CacheConfig;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Created by dnmaras on 10/22/14.
  */
 public class MemoryCache<K, V> implements Cache<K, V> {
-    protected Map<K, V> dataMap;
-    private Map<K, Long> readAccessOrderedMap;
-    private Map<K, Long> writeAccessOrderedMap;
-    private long acceptableStalenessMillis;
+    protected final Map<K, V> dataMap;
+    protected final Map<K, Instant> readAccessOrderedMap;
+    protected final Map<K, Instant> writeAccessOrderedMap;
+    protected final CacheConfig cacheConfig;
 
-    public MemoryCache(long acceptableStalenessMillis, long maxObjects) {
-        this.acceptableStalenessMillis = acceptableStalenessMillis;
-        readAccessOrderedMap = lruMap(maxObjects);
+    public MemoryCache(CacheConfig cacheConfig) {
+        this.cacheConfig = cacheConfig;
+        readAccessOrderedMap = lruMap(cacheConfig.getMaxObjects());
         writeAccessOrderedMap = new LinkedHashMap<>();
         dataMap = new HashMap<>();
     }
 
     @Override
     public V get(K key) {
-        return cacheOp(key, () -> dataMap.get(key), readAccessOrderedMap);
+        return cacheOp(key, () -> dataMap.get(key), readAccessOrderedMap, Instant.now());
     }
 
     @Override
-    public void put(K key, V value) {
-        cacheOp(key, () -> dataMap.put(key, value), writeAccessOrderedMap);
+    public void put(K key, V value, Instant lastModifiedTime) {
+        cacheOp(key, () -> dataMap.put(key, value), writeAccessOrderedMap, lastModifiedTime);
+    }
+
+    @Override
+    public Optional<Instant> getLastModifiedMillis(K key) {
+        return Optional.of(writeAccessOrderedMap.get(key));
     }
 
     interface Callable<V> extends java.util.concurrent.Callable<V> {
         V call();
     }
 
-    private V cacheOp(K key, Callable<V> callable, Map<K, Long> opAccessMap) {
-        long currentTimestamp = System.currentTimeMillis();
-        opAccessMap.put(key, currentTimestamp);
-        deleteStaleEntries(currentTimestamp);
+    private V cacheOp(K key, Callable<V> callable, Map<K, Instant> opAccessMap, Instant lastModTime) {
+        opAccessMap.put(key, lastModTime);
+        deleteStaleEntries();
         return callable.call();
     }
 
-    private void deleteStaleEntries(long currentTimestamp) {
+    private void deleteStaleEntries() {
         writeAccessOrderedMap.entrySet().stream().findFirst()
                 .ifPresent(entry -> {
-                    if (currentTimestamp - entry.getValue() > acceptableStalenessMillis) {
+                    Instant lastModifiedTime = entry.getValue();
+                    Instant expiryTimeForEntry = lastModifiedTime.plus(cacheConfig.getMaxStalePeriod());
+                    if (expiryTimeForEntry.compareTo(Instant.now()) < 0) {
                         remove(entry.getKey());
-                        deleteStaleEntries(currentTimestamp);
+                        deleteStaleEntries();
                     }
                 });
     }
@@ -59,11 +69,11 @@ public class MemoryCache<K, V> implements Cache<K, V> {
         writeAccessOrderedMap.remove(key);
     }
 
-    <A extends K, B> Map<A, B> lruMap(long maxObjects) {
+    <A extends K, B> Map<A, B> lruMap(Number maxObjects) {
         return new LinkedHashMap<A, B>(256, .75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<A, B> eldest) {
-                while (size() >= maxObjects) {
+                while (size() >= maxObjects.longValue()) {
                     MemoryCache.this.remove(eldest.getKey());
                 }
                 return false;

@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static homework.utils.StreamUtils.reify;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
+import static homework.utils.StreamUtils.reify;
 
 /**
  * Created by dnmaras on 10/21/14.
@@ -53,7 +53,7 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
     @Override
     public boolean remove(K key) {
         byte[] b = bytes(key);
-        Path hashDir = hashDir(b);
+        Path hashDir = entryDir(b);
         Optional<Path> entryDirOpt = getEntryFor(hashDir, b);
         boolean exists = entryDirOpt.isPresent();
         if (exists)

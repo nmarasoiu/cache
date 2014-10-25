@@ -1,7 +1,6 @@
 package homework.layered;
 
 import homework.ExtendedCache;
-import homework.layered.LayeredCache;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -9,19 +8,20 @@ import java.util.stream.Stream;
 /**
  * Created by dnmaras on 10/19/14.
  */
-public class ExtendedLayeredCache<K,V> extends LayeredCache<K,V, ExtendedCache<K,V>> implements ExtendedCache<K, V> {
+public class ExtendedLayeredCache<K, V> extends LayeredCache<K, V, ExtendedCache<K, V>> implements ExtendedCache<K, V> {
 
     public ExtendedLayeredCache(ExtendedCache<K, V> memCache, ExtendedCache<K, V> fsCache) {
         super(memCache, fsCache);
     }
 
     @Override
-    public Stream<Map.Entry<K, V>> entryStream() {
-        return underLock(fsCache::entryStream);
+    public synchronized Stream<Map.Entry<K, V>> entryStream() {
+        return fsCache.entryStream();
     }
 
     @Override
-    public boolean remove(K k) {
-        return underLock(() -> fsCache.remove(k));
+    public synchronized boolean remove(K k) {
+        memCache.remove(k);
+        return fsCache.remove(k);
     }
 }

@@ -4,11 +4,11 @@ import homework.Cache;
 import homework.markers.NonThreadSafe;
 
 import java.io.*;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -34,15 +34,15 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
     @Override
     public V get(K key) {
         byte[] keyBytes = bytes(key);
-        return getExistingValueFile(hashDir(keyBytes), keyBytes)
-                .map((Path valuePath) -> readObjectFromFile(valuePath))
+        return getExistingValueFile(entryDir(keyBytes), keyBytes)
+                .map(this::readObjectFromFile)
                 .orElse(null);
     }
 
     @Override
     public void put(K key, V value) {
         byte[] keyBytes = bytes(key);
-        Path hashDir = (hashDir(keyBytes));
+        Path hashDir = (entryDir(keyBytes));
         Optional<Path> maybeValueFile = getExistingValueFile(hashDir, keyBytes);
         rethrowIOExAsIoErr(() -> {
             final Path valuePath;
@@ -57,6 +57,20 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
             }
             writeObjectToFile(value, valuePath);
         });
+    }
+
+    @Override
+    public Optional<Instant> getLastModifiedMillis(K key) {
+            Path entryDir = entryDir(bytes(key));
+            if (Files.exists(entryDir))
+                return rethrowIOExAsIoErr(()->
+                        Optional.of(Files.getLastModifiedTime(entryDir).toInstant()));
+            else
+                return Optional.<Instant>empty();
+    }
+
+    protected byte[] keyBytes(Path entryDir) throws IOException {
+        return Files.readAllBytes(entryDir.resolve(KEY_FILENAME));
     }
 
     private Path nextDir(Path hashDir) {
@@ -101,13 +115,14 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
                 .map(entryDir -> entryDir.resolve(VALUE_FILENAME));
     }
 
-    Optional<Path> getEntryFor(Path hashDir, byte[] key) {
+    //todo: reorder member functions (methods), by their access level (public/protected/private in this order)
+    protected Optional<Path> getEntryFor(Path hashDir, byte[] key) {
         return Files.exists(hashDir) ?
                 rethrowIOExAsIoErr(() -> {
                     try (Stream<Path> list = Files.list(hashDir)) {
                         return list.filter(Files::isDirectory)
-                                                .filter(entryDir -> isThisMyKey(key, entryDir))
-                                                .findFirst();
+                                .filter(entryDir -> isThisMyKey(key, entryDir))
+                                .findFirst();
                     }
                 })
                 : Optional.empty();
@@ -117,11 +132,7 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
         return rethrowIOExAsIoErr(() -> (Arrays.equals(keyBytes(entryDir), bytes)));
     }
 
-    byte[] keyBytes(Path entryDir) throws IOException {
-        return Files.readAllBytes(entryDir.resolve(KEY_FILENAME));
-    }
-
-    Path hashDir(byte[] key) {
+    protected Path entryDir(byte[] key) {
         return basePath.resolve(hash(key));
     }
 
@@ -146,7 +157,7 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
         }
     }
 
-    <T> byte[] bytes(T object) {
+    protected <T> byte[] bytes(T object) {
         return rethrowIOExAsIoErr(() -> {
             try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
                  ObjectOutput out = new ObjectOutputStream(bos)) {
@@ -155,5 +166,4 @@ public class FileSystemHashCache<K, V> implements Cache<K, V> {
             }
         });
     }
-
 }

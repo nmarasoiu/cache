@@ -1,7 +1,7 @@
 package homework.memory;
 
 import homework.ExtendedCache;
-import homework.memory.MemoryCache;
+import homework.dto.CacheConfig;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -10,8 +10,9 @@ import java.util.stream.Stream;
  * Created by dnmaras on 10/23/14.
  */
 public class ExtendedMemoryCache<K, V> extends MemoryCache<K, V> implements ExtendedCache<K, V> {
-    public ExtendedMemoryCache(long acceptableStalenessMillis, long maxObjects) {
-        super(acceptableStalenessMillis, maxObjects);
+
+    public ExtendedMemoryCache(CacheConfig cacheConfig) {
+        super(cacheConfig);
     }
 
     @Override

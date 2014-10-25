@@ -2,9 +2,10 @@ package homework.layered;
 
 
 import homework.Cache;
+import homework.dto.CacheConfig;
+import homework.dto.CacheConfigBuilder;
 import homework.markers.ThreadSafe;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,15 +15,17 @@ import java.util.List;
 @ThreadSafe(comment = "Just as thread safe as the underlying shard' caches")
 public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implements Cache<K, V> {
     protected static final int concurrencyFactor = 16;
+    protected CacheConfig cacheConfig;
     protected List<CacheType> shards;
-    protected long maxObjects;
-    protected Path basePath;
-    protected long stalenessMillis;
 
-    public SegmentedCache(Path basePath, double maxObjects, long stalenessMillis) {
-        this.basePath = basePath;
-        this.stalenessMillis = stalenessMillis;
-        this.maxObjects = (long) (.99 * maxObjects / concurrencyFactor);
+    public SegmentedCache(CacheConfig cacheConfig) {
+        //todo: create a copy-constructor like functionality with the builder that we cannot forget copy-ing a property here
+        this.cacheConfig = new CacheConfigBuilder()
+                .setConcurrencyFactor(concurrencyFactor)
+                .setMaxObjects(cacheConfig.getMaxObjects())
+                .setBasePath(cacheConfig.getBasePath())
+                .setMaxStalePeriod(cacheConfig.getMaxStalePeriod())
+                .createCacheConfig();
         shards = Collections.unmodifiableList(createShardMaps());
     }
 
@@ -50,7 +53,7 @@ public abstract class SegmentedCache<K, V, CacheType extends Cache<K, V>> implem
 
     abstract protected List<CacheType> createShardMaps();
 
-    abstract protected CacheType theMemCache() ;
+    abstract protected CacheType theMemCache();
 
     public List<CacheType> getShards() {
         return shards;

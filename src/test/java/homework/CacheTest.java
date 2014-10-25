@@ -1,9 +1,12 @@
 package homework;
 
+import homework.dto.CacheConfigBuilder;
 import homework.layered.RawSegmentedCache;
 import homework.utils.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.time.Duration;
 
 import static org.junit.Assert.assertEquals;
 
@@ -15,7 +18,12 @@ public abstract class CacheTest<K, V> {
 
     @Before
     public void arrange() {
-        cache = new RawSegmentedCache<>(TestUtils.createRoot(), 9090, 5000);
+        cache = new RawSegmentedCache<>(
+                new CacheConfigBuilder()
+                        .setBasePath(TestUtils.createRoot())
+                .setMaxObjects(9090)
+                .setMaxStalePeriod(Duration.ofSeconds(5))
+                .createCacheConfig());
     }
 
     @Test

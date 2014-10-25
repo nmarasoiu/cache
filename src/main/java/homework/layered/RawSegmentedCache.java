@@ -1,6 +1,7 @@
 package homework.layered;
 
 import homework.Cache;
+import homework.dto.CacheConfig;
 import homework.filesystem.FileSystemHashCache;
 import homework.memory.MemoryCache;
 
@@ -13,8 +14,8 @@ import java.util.List;
  * Created by dnmaras on 10/19/14.
  */
 public class RawSegmentedCache<K,V> extends SegmentedCache<K,V, Cache<K,V>> {
-    public RawSegmentedCache(Path basePath, double maxObjects, long stalenessMillis) {
-        super(basePath, maxObjects, stalenessMillis);
+    public RawSegmentedCache(CacheConfig cacheConfig) {
+        super(cacheConfig);
     }
 
     @Override
@@ -22,7 +23,7 @@ public class RawSegmentedCache<K,V> extends SegmentedCache<K,V, Cache<K,V>> {
         List<Cache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
             Cache<K, V> memCache = theMemCache();
-            Cache<K, V> fsCache = new FileSystemHashCache<>(basePath.resolve(String.valueOf(i)));
+            Cache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
             shards.add(new LayeredCache<>(memCache, fsCache));
         }
         return Collections.unmodifiableList(shards);
@@ -31,6 +32,6 @@ public class RawSegmentedCache<K,V> extends SegmentedCache<K,V, Cache<K,V>> {
 
     @Override
     protected Cache<K,V> theMemCache() {
-        return new MemoryCache<K, V>(stalenessMillis, maxObjects);
+        return new MemoryCache<K, V>(cacheConfig);
     }
 }

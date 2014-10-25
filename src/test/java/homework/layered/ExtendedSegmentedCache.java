@@ -1,11 +1,14 @@
 package homework.layered;
 
 import homework.ExtendedCache;
+import homework.dto.CacheConfig;
 import homework.filesystem.ExtendedCacheOnFilesystem;
 import homework.memory.ExtendedMemoryCache;
 
-import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static homework.utils.StreamUtils.reify;
@@ -14,8 +17,8 @@ import static homework.utils.StreamUtils.reify;
  * Created by dnmaras on 10/19/14.
  */
 public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedCache<K, V>> implements ExtendedCache<K, V> {
-    public ExtendedSegmentedCache(Path basePath, double maxObjects, long stalenessMillis) {
-        super(basePath, maxObjects, stalenessMillis);
+    public ExtendedSegmentedCache(CacheConfig cacheConfig) {
+        super(cacheConfig);
     }
 
     @Override
@@ -23,7 +26,7 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
         List<ExtendedCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
             ExtendedCache<K, V> memCache = theMemCache();
-            ExtendedCache<K, V> fsCache = new ExtendedCacheOnFilesystem<K, V>(basePath.resolve(String.valueOf(i)));
+            ExtendedCache<K, V> fsCache = new ExtendedCacheOnFilesystem<K, V>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
             shards.add(new ExtendedLayeredCache<>(memCache, fsCache));
         }
         return Collections.unmodifiableList(shards);
@@ -31,7 +34,7 @@ public class ExtendedSegmentedCache<K, V> extends SegmentedCache<K, V, ExtendedC
 
     @Override
     protected ExtendedCache<K, V> theMemCache() {
-        return new ExtendedMemoryCache<K,V>(maxObjects, stalenessMillis);
+        return new ExtendedMemoryCache<K,V>(cacheConfig);
     }
 
     @Override
