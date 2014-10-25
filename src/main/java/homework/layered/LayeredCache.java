@@ -1,6 +1,7 @@
 package homework.layered;
 
 import homework.ExtendedCache;
+import homework.dto.Option;
 import homework.dto.Statistic;
 import homework.markers.ThreadSafe;
 
@@ -18,15 +19,17 @@ public class LayeredCache<K, V> implements ExtendedCache<K, V> {
     //we use synchronized, as the simplest; I would still consider locks for ability to let interrupt
     //read-write locks are not options because the "read" actually is also a potential write op
     public synchronized V get(K key) {
-        Statistic<V> statVal = memCache.getWrapped(key);
-        if (statVal == null) {
-            statVal = fsCache.getWrapped(key);
-            if (statVal == null) {
+        Option<Statistic<V>> maybeValueWithStats = memCache.getWrapped(key);
+        if (maybeValueWithStats.isEmpty()) {
+            maybeValueWithStats = fsCache.getWrapped(key);
+            if (maybeValueWithStats.isEmpty()) {
                 return null;
             }
-            memCache.put(key, statVal.getValue(), statVal.getLastModifiedDate());
+            memCache.put(key,
+                    maybeValueWithStats.value().value(),
+                    maybeValueWithStats.value().getLastModifiedDate());
         }
-        return statVal.getValue();
+        return maybeValueWithStats.value().value();
     }
 
     @Override

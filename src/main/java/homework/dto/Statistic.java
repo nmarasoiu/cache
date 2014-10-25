@@ -1,18 +1,14 @@
 package homework.dto;
 
+
 import java.time.Instant;
 
 /**
  * Created by dnmaras on 10/25/14.
  */
-public final class Statistic<V> {
+public final class Statistic<V> implements Option<V> {
     private V value;
     private Instant lastModifiedDate;
-
-
-    public Statistic(V value) {
-        this(value, Instant.now());
-    }
 
     public Statistic(V value, Instant lastModifiedDate) {
         this.value = value;
@@ -23,7 +19,14 @@ public final class Statistic<V> {
         return lastModifiedDate;
     }
 
-    public V getValue() {
+    @Override
+    public boolean isEmpty() {
+        return false;
+    }
+
+    @Override
+    public V value() {
         return value;
     }
+
 }

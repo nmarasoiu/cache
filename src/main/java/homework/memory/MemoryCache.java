@@ -2,6 +2,7 @@ package homework.memory;
 
 import homework.ExtendedCache;
 import homework.dto.CacheConfig;
+import homework.dto.Option;
 import homework.dto.Statistic;
 
 import java.time.Instant;
@@ -41,11 +42,11 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
     }
 
     @Override
-    public Statistic<V> getWrapped(K key) {
+    public Option<Statistic<V>> getWrapped(K key) {
         if (dataMap.containsKey(key))
-            return new Statistic<V>(get(key), writeAccessOrderedMap.get(key));
+            return OptionFactory.some(new Statistic<V>(get(key), writeAccessOrderedMap.get(key)));
         else
-            return null;
+            return OptionFactory.missing();
     }
 
     private void deleteStaleEntries() {

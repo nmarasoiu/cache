@@ -1,8 +1,10 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
+import homework.dto.Option;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
+import homework.memory.OptionFactory;
 
 import java.io.*;
 import java.nio.file.FileSystem;
@@ -51,11 +53,12 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     @Override
-    public Statistic<V> getWrapped(K key) {
+    public Option<Statistic<V>> getWrapped(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         return getvOptional(key)
-                .map(value -> new Statistic<V>(value, getLastModifiedDate(keyRelated)))
-                .orElse(null);
+                .map(value -> OptionFactory.some(
+                        new Statistic<V>(value, getLastModifiedDate(keyRelated))))
+                .orElse(OptionFactory.missing());
     }
 
     private Optional<V> getvOptional(K key) {
