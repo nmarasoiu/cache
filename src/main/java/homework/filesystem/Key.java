@@ -1,7 +1,6 @@
 package homework.filesystem;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
@@ -18,35 +17,18 @@ import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 /**
  * Created by dnmaras on 10/25/14.
  */
-public class KeyDerivates<K> {
+public class Key<K> {
+    //input
     private final Path basePath;
     private final K key;
     //lazy computable values
     private byte[] keyBytes;
+    private String persistentHash;
     private Path hashDir;
 
-    public KeyDerivates(Path basePath, K key) {
+    public Key(Path basePath, K key) {
         this.key = key;
         this.basePath = basePath;
-    }
-
-    public Optional<Path> findOptionalEntryDir() {
-        return Files.exists(hashDir()) ?
-                rethrowIOExAsIoErr(() -> {
-                    try (Stream<Path> list = Files.list(hashDir())) {
-                        return list.filter(Files::isDirectory)
-                                .filter(this::isThisMyKey)
-                                .findFirst();
-                    }
-                })
-                : Optional.empty();
-    }
-
-    public Path hashDir() {
-        if (hashDir == null) {
-            hashDir = basePath.resolve(hash());
-        }
-        return hashDir;
     }
 
     public byte[] keyBytes() {
@@ -56,12 +38,35 @@ public class KeyDerivates<K> {
         return keyBytes;
     }
 
-    private Boolean isThisMyKey(Path entryDir) {
-        return rethrowIOExAsIoErr(() -> (Arrays.equals(readKeyBytes(entryDir), keyBytes())));
+    private String persistentHash() {
+        if (persistentHash == null) {
+            persistentHash = toString(newDigester().digest(keyBytes()));
+        }
+        return persistentHash;
     }
 
-    private String hash() {
-        return toString(newDigester().digest(keyBytes()));
+    public Path hashDir() {
+        if (hashDir == null) {
+            hashDir = basePath.resolve(persistentHash());
+        }
+        return hashDir;
+    }
+
+    public Optional<Path> findOptionalEntryDir() {
+        if (!Files.exists(hashDir())) {
+            return Optional.empty();
+        }
+        return rethrowIOExAsIoErr(() -> {
+            try (Stream<Path> list = Files.list(hashDir())) {
+                return list.filter(Files::isDirectory)
+                        .filter(this::isThisMyKey)
+                        .findFirst();
+            }
+        });
+    }
+
+    private Boolean isThisMyKey(Path entryDir) {
+        return rethrowIOExAsIoErr(() -> (Arrays.equals(readKeyBytes(entryDir), keyBytes())));
     }
 
     private String toString(byte[] bytes) {

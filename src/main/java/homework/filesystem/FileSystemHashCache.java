@@ -37,7 +37,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public V get(K key) {
-        KeyDerivates<K> keyRelated = new KeyDerivates<K>(basePath, key);
+        Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
         if (entryDirOptional.isPresent()) {
             Path entryDir = entryDirOptional.get();
@@ -61,7 +61,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public void put(K key, V value) {
-        KeyDerivates<K> keyRelated = new KeyDerivates<>(basePath, key);
+        Key<K> keyRelated = new Key<>(basePath, key);
         Optional<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
         rethrowIOExAsIoErr(() -> {
             final Path valuePath;
@@ -81,7 +81,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public Optional<Instant> getLastModifiedMillis(K key) {
-        KeyDerivates<K> keyRelated = new KeyDerivates<>(basePath, key);
+        Key<K> keyRelated = new Key<>(basePath, key);
         return keyRelated.findOptionalEntryDir()
                 .map(entry -> rethrowIOExAsIoErr(() ->
                         getLastModifiedTime(entry).toInstant()));

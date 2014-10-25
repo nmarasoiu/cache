@@ -53,7 +53,7 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
 
     @Override
     public boolean remove(K key) {
-        KeyDerivates<K> keyRelated = new KeyDerivates<>(basePath, key);
+        Key<K> keyRelated = new Key<>(basePath, key);
         Optional<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
         boolean exists = entryDirOpt.isPresent();
         if (exists)
