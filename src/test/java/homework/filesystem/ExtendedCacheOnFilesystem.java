@@ -13,7 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static homework.utils.BytesUtils.readKeyBytes;
+import static homework.filesystem.Utils.keyPathForEntry;
+import static homework.filesystem.Utils.readKeyBytes;
+import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 import static homework.utils.StreamUtils.reify;
 
@@ -34,8 +36,8 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
                                 .filter(Files::isDirectory)
                                 .filter(path -> path.getParent() != null)
                                 .filter(path -> basePath.equals(path.getParent().getParent()))
-                                .filter(path -> Files.exists(path.resolve(KEY_FILENAME)))
-                                .filter(path -> Files.exists(path.resolve(VALUE_FILENAME)))
+                                .filter(path -> Files.exists(keyPathForEntry(path)))
+                                .filter(path -> Files.exists(valuePathForEntry(path)))
                                 .map(entryPath -> rethrowIOExAsIoErr(() -> {
                                     K k = (K) fromBytes(readKeyBytes(entryPath));
                                     return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
@@ -59,8 +61,8 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
         if (exists)
             rethrowIOExAsIoErr((IORunnable) () -> {
                 Path entryDir = entryDirOpt.get();
-                Files.delete(entryDir.resolve(KEY_FILENAME));
-                Files.delete(entryDir.resolve(VALUE_FILENAME));
+                Files.delete(keyPathForEntry(entryDir));
+                Files.delete(valuePathForEntry(entryDir));
                 Files.delete(entryDir);
             });
         return exists;

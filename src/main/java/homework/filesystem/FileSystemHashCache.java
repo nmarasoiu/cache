@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 
+import static homework.filesystem.Utils.keyPathForEntry;
+import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 import static java.nio.file.Files.getLastModifiedTime;
 import static java.nio.file.Files.readAllLines;
@@ -21,8 +23,6 @@ import static java.nio.file.Files.readAllLines;
  */
 @NonThreadSafe
 public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
-    protected static final String VALUE_FILENAME = "value.bin";
-    public static final String KEY_FILENAME = "key.bin";
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
     private static final String PREV_RW = "prevRW", PREV_W = "prevW";
     private static final String NEXT_RW = "prevRW", NEXT_W = "prevW";
@@ -48,15 +48,9 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
         }
         return entryDirOptional
-                .map(entryDir -> entryDir.resolve(VALUE_FILENAME))
+                .map(entryDir -> valuePathForEntry(entryDir))
                 .map(this::readObjectFromFile)
                 .orElse(null);
-    }
-
-    private void removeFromLinkedList(Path entryDir, IndexType indexType) {
-        Path previousDir = getSibling(entryDir, SiblingType.LEFT, indexType);
-        Path nextDir = getSibling(entryDir, SiblingType.RIGHT, indexType);
-        writeSibling(previousDir, SiblingType.RIGHT, indexType, nextDir);
     }
 
     @Override
@@ -67,13 +61,13 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
             final Path valuePath;
             if (maybeEntryDir.isPresent()) {
                 Path entryDir = maybeEntryDir.get();
-                valuePath = entryDir.resolve(VALUE_FILENAME);
+                valuePath = valuePathForEntry(entryDir);
                 Files.delete(valuePath);
             } else {
                 Files.createDirectories(keyRelated.hashDir());
                 Path entryDir = Files.createDirectories(nextDir(keyRelated.hashDir()));
-                write(keyRelated.keyBytes(), entryDir.resolve(KEY_FILENAME));
-                valuePath = entryDir.resolve(VALUE_FILENAME);
+                write(keyRelated.keyBytes(), keyPathForEntry(entryDir));
+                valuePath = valuePathForEntry(entryDir);
             }
             writeObjectToFile(value, valuePath);
         });
@@ -85,6 +79,12 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         return keyRelated.findOptionalEntryDir()
                 .map(entry -> rethrowIOExAsIoErr(() ->
                         getLastModifiedTime(entry).toInstant()));
+    }
+
+    private void removeFromLinkedList(Path entryDir, IndexType indexType) {
+        Path previousDir = getSibling(entryDir, SiblingType.LEFT, indexType);
+        Path nextDir = getSibling(entryDir, SiblingType.RIGHT, indexType);
+        writeSibling(previousDir, SiblingType.RIGHT, indexType, nextDir);
     }
 
     private Path nextDir(Path hashDir) {

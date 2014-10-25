@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static homework.utils.BytesUtils.readKeyBytes;
+import static homework.filesystem.Utils.readKeyBytes;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 
 /**
