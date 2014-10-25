@@ -5,7 +5,7 @@ import homework.markers.NonThreadSafe;
 
 import java.io.*;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
+import static java.nio.file.Files.*;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
@@ -14,8 +14,6 @@ import java.util.Optional;
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
-import static java.nio.file.Files.getLastModifiedTime;
-import static java.nio.file.Files.readAllLines;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -31,7 +29,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     protected final FileSystem fs;
 
     public FileSystemHashCache(Path basePath) {
-        this.basePath = uncheckIOException(() -> Files.createDirectories(basePath.normalize()));
+        this.basePath = uncheckIOException(() -> createDirectories(basePath.normalize()));
         this.fs = this.basePath.getFileSystem();
     }
 
@@ -62,11 +60,11 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
             if (maybeEntryDir.isPresent()) {
                 Path entryDir = maybeEntryDir.get();
                 valuePath = valuePathForEntry(entryDir);
-                Files.delete(valuePath);
+                delete(valuePath);
             } else {
-                Files.createDirectories(keyRelated.hashDir());
-                Path entryDir = Files.createDirectories(nextDir(keyRelated.hashDir()));
-                write(keyRelated.keyBytes(), keyPathForEntry(entryDir));
+                createDirectories(keyRelated.hashDir());
+                Path entryDir = createDirectories(nextDir(keyRelated.hashDir()));
+                write(keyPathForEntry(entryDir), keyRelated.keyBytes());
                 valuePath = valuePathForEntry(entryDir);
             }
             writeObjectToFile(value, valuePath);
@@ -91,21 +89,15 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         return uncheckIOException(() -> {
             Path file = hashDir.resolve(LAST_ENTRY_NO_FILENAME);
             final String nextInt = String.valueOf
-                    (Files.exists(file) ? 1 + Long.parseLong(Files.lines(file).findFirst().get()) : 1);
-            Files.write(file, Collections.singleton(nextInt));
+                    (exists(file) ? 1 + Long.parseLong(lines(file).findFirst().get()) : 1);
+            write(file, Collections.singleton(nextInt));
             return hashDir.resolve(nextInt);
         });
     }
 
-    private void write(byte[] source, Path path) throws IOException {
-        try (InputStream keyStream = new ByteArrayInputStream((source))) {
-            Files.copy(keyStream, path);
-        }
-    }
-
     private V readObjectFromFile(Path path) {
         return uncheckIOException(() -> {
-            try (InputStream fileInStream = Files.newInputStream(path);
+            try (InputStream fileInStream = newInputStream(path);
                  ObjectInput objectInStream = new ObjectInputStream(fileInStream)) {
                 return (V) objectInStream.readObject();
             } catch (ClassNotFoundException e) {
@@ -116,7 +108,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     private void writeObjectToFile(Object value, Path path) {
         uncheckIOException(() -> {
-            try (OutputStream fileOutStream = Files.newOutputStream(path);
+            try (OutputStream fileOutStream = newOutputStream(path);
                  ObjectOutput objOutStream = new ObjectOutputStream(fileOutStream)) {
                 objOutStream.writeObject(value);
             }
@@ -127,7 +119,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     private void writeSibling(Path entryDir, SiblingType siblingType, IndexType indexType, Path siblingPath) {
         Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
         uncheckIOException(() ->
-                        Files.write(linkPath, Collections.singleton(siblingPath.toString()))
+                        write(linkPath, Collections.singleton(siblingPath.toString()))
         );
     }
 
@@ -142,9 +134,9 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         return entryDir.resolve(filenameForSiblingKind(siblingType, indexType));
     }
 
-    private String filenameForSiblingKind(SiblingType sublingType, IndexType indexType) {
+    private String filenameForSiblingKind(SiblingType siblingType, IndexType indexType) {
         final String filename;
-        if (sublingType == SiblingType.LEFT) {
+        if (siblingType == SiblingType.LEFT) {
             if (indexType == IndexType.ReadWrite) {
                 filename = PREV_RW;
             } else if (indexType == IndexType.WriteOnly) {
@@ -152,7 +144,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
             } else {
                 throw new IllegalArgumentException("indexType must be read/write or write only");
             }
-        } else if (sublingType == SiblingType.RIGHT) {
+        } else if (siblingType == SiblingType.RIGHT) {
             if (indexType == IndexType.ReadWrite) {
                 filename = NEXT_RW;
             } else if (indexType == IndexType.WriteOnly) {
