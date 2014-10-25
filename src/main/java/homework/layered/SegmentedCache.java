@@ -3,7 +3,7 @@ package homework.layered;
 
 import homework.ExtendedCache;
 import homework.dto.CacheConfig;
-import homework.dto.CacheConfigBuilder;
+import homework.utils.CacheConfigBuilder;
 import homework.markers.ThreadSafe;
 
 import java.util.Collections;

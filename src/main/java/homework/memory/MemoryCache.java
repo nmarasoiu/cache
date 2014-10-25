@@ -2,8 +2,9 @@ package homework.memory;
 
 import homework.ExtendedCache;
 import homework.dto.CacheConfig;
-import homework.dto.Option;
+import homework.option.Option;
 import homework.dto.Statistic;
+import homework.option.OptionFactory;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;

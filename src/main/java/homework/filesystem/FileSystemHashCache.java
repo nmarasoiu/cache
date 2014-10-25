@@ -1,10 +1,10 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
-import homework.dto.Option;
+import homework.option.Option;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
-import homework.memory.OptionFactory;
+import homework.option.OptionFactory;
 
 import java.io.*;
 import java.nio.file.FileSystem;

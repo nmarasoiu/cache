@@ -1,6 +1,6 @@
 package homework;
 
-import homework.dto.CacheConfigBuilder;
+import homework.utils.CacheConfigBuilder;
 import homework.layered.RawSegmentedCache;
 import homework.utils.TestUtils;
 import org.junit.Before;

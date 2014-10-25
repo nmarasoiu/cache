@@ -1,6 +1,4 @@
-package homework.dto;
-
-import java.util.Set;
+package homework.option;
 
 /**
  * Created by dnmaras on 10/25/14.

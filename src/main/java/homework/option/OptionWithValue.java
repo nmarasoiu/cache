@@ -1,6 +1,4 @@
-package homework.memory;
-
-import homework.dto.Option;
+package homework.option;
 
 /**
  * Created by dnmaras on 10/25/14.

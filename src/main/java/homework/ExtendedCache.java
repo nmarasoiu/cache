@@ -1,6 +1,6 @@
 package homework;
 
-import homework.dto.Option;
+import homework.option.Option;
 import homework.dto.Statistic;
 
 import java.time.Instant;

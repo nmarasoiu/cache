@@ -1,7 +1,7 @@
 package homework.layered;
 
 import homework.ExtendedCache;
-import homework.dto.Option;
+import homework.option.Option;
 import homework.dto.Statistic;
 import homework.markers.ThreadSafe;
 

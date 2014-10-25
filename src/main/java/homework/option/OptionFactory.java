@@ -1,6 +1,4 @@
-package homework.memory;
-
-import homework.dto.Option;
+package homework.option;
 
 import java.util.NoSuchElementException;
 

@@ -1,7 +1,5 @@
 package homework.filesystem;
 
-import homework.filesystem.FileSystemHashCache;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

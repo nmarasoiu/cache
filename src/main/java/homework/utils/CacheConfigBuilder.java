@@ -1,4 +1,6 @@
-package homework.dto;
+package homework.utils;
+
+import homework.dto.CacheConfig;
 
 import java.nio.file.Path;
 import java.time.Duration;
