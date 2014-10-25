@@ -61,8 +61,10 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public boolean remove(K key) {
-        return dataMap.remove(key) != null
-                | writeAccessOrderedMap.remove(key) != null;
+        boolean contains = dataMap.containsKey(key);
+        dataMap.remove(key);
+        writeAccessOrderedMap.remove(key);
+        return contains;
     }
 
     <B> Map<K, B> lruMap(Number maxObjects) {

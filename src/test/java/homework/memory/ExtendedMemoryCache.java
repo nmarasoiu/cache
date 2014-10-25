@@ -22,6 +22,8 @@ public class ExtendedMemoryCache<K, V> extends MemoryCache<K, V> implements Exte
 
     @Override
     public boolean remove(K k) {
-        return dataMap.remove(k) != null;
+        boolean contains = dataMap.containsKey(k);
+        dataMap.remove(k);
+        return contains;
     }
 }
