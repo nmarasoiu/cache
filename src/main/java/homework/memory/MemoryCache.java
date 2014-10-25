@@ -2,11 +2,11 @@ package homework.memory;
 
 import homework.ExtendedCache;
 import homework.dto.CacheConfig;
+import homework.dto.Statistic;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Entries are evicted from dataMap based on:
@@ -41,9 +41,11 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
     }
 
     @Override
-    public Optional<Instant> getLastModifiedMillis(K key) {
-        Instant value = writeAccessOrderedMap.get(key);
-        return value != null ? Optional.of(value) : Optional.empty();
+    public Statistic<V> getWrapped(K key) {
+        if (dataMap.containsKey(key))
+            return new Statistic<V>(get(key), writeAccessOrderedMap.get(key));
+        else
+            return null;
     }
 
     private void deleteStaleEntries() {
@@ -69,6 +71,7 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
 
     <B> Map<K, B> lruMap(Number maxObjects) {
         long maxNoOfObjects = maxObjects.longValue();
+        //todo: make this a read-access time order (not read-write)
         return new LinkedHashMap<K, B>(16, .75f, true) {
             @Override
             protected boolean removeEldestEntry(Map.Entry<K, B> eldest) {

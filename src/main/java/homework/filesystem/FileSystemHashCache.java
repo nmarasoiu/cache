@@ -1,6 +1,7 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
+import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
 
 import java.io.*;
@@ -45,18 +46,42 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public V get(K key) {
+        return getvOptional(key)
+                .orElse(null);
+    }
+
+    @Override
+    public Statistic<V> getWrapped(K key) {
+        Key<K> keyRelated = new Key<K>(basePath, key);
+        return getvOptional(key)
+                .map(value -> new Statistic<V>(value, getLastModifiedDate(keyRelated)))
+                .orElse(null);
+    }
+
+    private Optional<V> getvOptional(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
+        reindex(entryDirOptional);
+
+        return entryDirOptional
+                .map(Utils::valuePathForEntry)
+                .map(this::readObjectFromFile);
+    }
+
+    private Instant getLastModifiedDate(Key<K> keyRelated) {
+        return keyRelated.findOptionalEntryDir()
+                .map(entry -> uncheckIOException(() ->
+                        getLastModifiedTime(entry).toInstant()))
+                .orElse(Instant.now());
+    }
+
+    private void reindex(Optional<Path> entryDirOptional) {
         if (entryDirOptional.isPresent()) {
             Path entryDir = entryDirOptional.get();
 //            rearrangeLinkedList(entryDir);
         } else {
 
         }
-        return entryDirOptional
-                .map(Utils::valuePathForEntry)
-                .map(this::readObjectFromFile)
-                .orElse(null);
     }
 
     private void rearrangeLinkedList(Path entryDir) {
@@ -90,14 +115,6 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
             }
             writeObjectToFile(value, valuePath);
         });
-    }
-
-    @Override
-    public Optional<Instant> getLastModifiedMillis(K key) {
-        Key<K> keyRelated = new Key<>(basePath, key);
-        return keyRelated.findOptionalEntryDir()
-                .map(entry -> uncheckIOException(() ->
-                        getLastModifiedTime(entry).toInstant()));
     }
 
     private void removeFromLinkedList(Path entryDir, IndexType indexType) {

@@ -1,16 +1,15 @@
 package homework.layered;
 
 import homework.ExtendedCache;
+import homework.dto.Statistic;
 import homework.markers.ThreadSafe;
 
-import java.time.Instant;
-
 @ThreadSafe
-public class LayeredCache<K, V, CacheType extends ExtendedCache<K, V>> implements ExtendedCache<K, V> {
-    protected final CacheType memCache;
-    protected final CacheType fsCache;
+public class LayeredCache<K, V> implements ExtendedCache<K, V> {
+    protected final ExtendedCache<K, V> memCache;
+    protected final ExtendedCache<K, V> fsCache;
 
-    public LayeredCache(CacheType memCache, CacheType fsCache) {
+    public LayeredCache(ExtendedCache<K, V> memCache, ExtendedCache<K, V> fsCache) {
         this.memCache = memCache;
         this.fsCache = fsCache;
     }
@@ -19,20 +18,15 @@ public class LayeredCache<K, V, CacheType extends ExtendedCache<K, V>> implement
     //we use synchronized, as the simplest; I would still consider locks for ability to let interrupt
     //read-write locks are not options because the "read" actually is also a potential write op
     public synchronized V get(K key) {
-        V value = memCache.get(key);
-        //if a null value exists in the map, it will still go to the filesystem; not a bug, but not intuitive and maybe a performance concern
-        //to introduce a special wrapper Optional value or special containsKey method just for this case is not worth; maybe if it will be useful for time stamp strategies
-        if (value == null) {
-            value = fsCache.get(key);
-            memCache.put(key, value,
-                    getLastModTime(key));
+        Statistic<V> statVal = memCache.getWrapped(key);
+        if (statVal == null) {
+            statVal = fsCache.getWrapped(key);
+            if (statVal == null) {
+                return null;
+            }
+            memCache.put(key, statVal.getValue(), statVal.getLastModifiedDate());
         }
-        return value;
-    }
-
-    private Instant getLastModTime(K key) {
-        return fsCache.getLastModifiedMillis(key)
-                .orElse(Instant.now());
+        return statVal.getValue();
     }
 
     @Override

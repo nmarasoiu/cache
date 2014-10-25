@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 /**
  * Created by dnmaras on 10/19/14.
  */
-public class ExtendedLayeredCache<K, V> extends LayeredCache<K, V, ExtendedCache<K, V>> implements ExtendedCache<K, V> {
+public class ExtendedLayeredCache<K, V> extends LayeredCache<K, V> implements ExtendedCache<K, V> {
 
     public ExtendedLayeredCache(ExtendedCache<K, V> memCache, ExtendedCache<K, V> fsCache) {
         super(memCache, fsCache);
