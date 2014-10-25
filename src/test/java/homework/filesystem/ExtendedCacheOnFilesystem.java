@@ -1,7 +1,6 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
-import homework.utils.IORunnable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ObjectInput;
@@ -13,9 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static homework.filesystem.Utils.keyPathForEntry;
-import static homework.filesystem.Utils.readKeyBytes;
-import static homework.filesystem.Utils.valuePathForEntry;
+import static homework.filesystem.Utils.*;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 import static homework.utils.StreamUtils.reify;
 
@@ -58,14 +55,17 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
         Key<K> keyRelated = new Key<>(basePath, key);
         Optional<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
         boolean exists = entryDirOpt.isPresent();
-        if (exists)
-            rethrowIOExAsIoErr((IORunnable) () -> {
-                Path entryDir = entryDirOpt.get();
-                Files.delete(keyPathForEntry(entryDir));
-                Files.delete(valuePathForEntry(entryDir));
-                Files.delete(entryDir);
-            });
+        if (exists) {
+            Path entryDir = entryDirOpt.get();
+            delete(keyPathForEntry(entryDir));
+            delete(valuePathForEntry(entryDir));
+            delete(entryDir);
+        }
         return exists;
+    }
+
+    private void delete(Path path) {
+        rethrowIOExAsIoErr(() -> Files.delete(path));
     }
 
     private Object fromBytes(byte[] bytes) {

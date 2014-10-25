@@ -15,9 +15,9 @@ public class ExceptionWrappingUtils {
         }
     }
 
-    public static void rethrowIOExAsIoErr(IORunnable callable) {
+    public static void rethrowIOExAsIoErr(IORunnable runnable) {
         try {
-            callable.call();
+            runnable.run();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
