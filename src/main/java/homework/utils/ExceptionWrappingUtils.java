@@ -7,7 +7,7 @@ import java.io.UncheckedIOException;
  * In languages with Scala, this would be a single method, and T could be bound to Unit, meaning void.
  */
 public class ExceptionWrappingUtils {
-    public static <T> T rethrowIOExAsIoErr(IOCallable<T> callable) {
+    public static <T> T uncheckIOException(IOCallable<T> callable) {
         try {
             return callable.call();
         } catch (IOException e) {
@@ -15,7 +15,7 @@ public class ExceptionWrappingUtils {
         }
     }
 
-    public static void rethrowIOExAsIoErr(IORunnable runnable) {
+    public static void uncheckIOException(IORunnable runnable) {
         try {
             runnable.run();
         } catch (IOException e) {

@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.*;
-import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
+import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static homework.utils.StreamUtils.reify;
 
 /**
@@ -27,7 +27,7 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
 
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
-        return rethrowIOExAsIoErr(() -> {
+        return uncheckIOException(() -> {
                     try (Stream<Path> pathsStream = Files.walk(basePath)) {
                         return reify(pathsStream
                                 .filter(Files::isDirectory)
@@ -35,7 +35,7 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
                                 .filter(path -> basePath.equals(path.getParent().getParent()))
                                 .filter(path -> Files.exists(keyPathForEntry(path)))
                                 .filter(path -> Files.exists(valuePathForEntry(path)))
-                                .map(entryPath -> rethrowIOExAsIoErr(() -> {
+                                .map(entryPath -> uncheckIOException(() -> {
                                     K k = (K) fromBytes(readKeyBytes(entryPath));
                                     return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
                                         @Override
@@ -65,11 +65,11 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
     }
 
     private void delete(Path path) {
-        rethrowIOExAsIoErr(() -> Files.delete(path));
+        uncheckIOException(() -> Files.delete(path));
     }
 
     private Object fromBytes(byte[] bytes) {
-        return rethrowIOExAsIoErr(() -> {
+        return uncheckIOException(() -> {
             try (ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
                 return in.readObject();
             } catch (ClassNotFoundException e) {

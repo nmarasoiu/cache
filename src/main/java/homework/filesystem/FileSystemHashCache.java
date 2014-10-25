@@ -13,7 +13,7 @@ import java.util.Optional;
 
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.valuePathForEntry;
-import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
+import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static java.nio.file.Files.getLastModifiedTime;
 import static java.nio.file.Files.readAllLines;
 
@@ -31,7 +31,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     protected final FileSystem fs;
 
     public FileSystemHashCache(Path basePath) {
-        this.basePath = rethrowIOExAsIoErr(() -> Files.createDirectories(basePath.normalize()));
+        this.basePath = uncheckIOException(() -> Files.createDirectories(basePath.normalize()));
         this.fs = this.basePath.getFileSystem();
     }
 
@@ -57,7 +57,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     public void put(K key, V value) {
         Key<K> keyRelated = new Key<>(basePath, key);
         Optional<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
-        rethrowIOExAsIoErr(() -> {
+        uncheckIOException(() -> {
             final Path valuePath;
             if (maybeEntryDir.isPresent()) {
                 Path entryDir = maybeEntryDir.get();
@@ -77,7 +77,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     public Optional<Instant> getLastModifiedMillis(K key) {
         Key<K> keyRelated = new Key<>(basePath, key);
         return keyRelated.findOptionalEntryDir()
-                .map(entry -> rethrowIOExAsIoErr(() ->
+                .map(entry -> uncheckIOException(() ->
                         getLastModifiedTime(entry).toInstant()));
     }
 
@@ -88,7 +88,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     private Path nextDir(Path hashDir) {
-        return rethrowIOExAsIoErr(() -> {
+        return uncheckIOException(() -> {
             Path file = hashDir.resolve(LAST_ENTRY_NO_FILENAME);
             final String nextInt = String.valueOf
                     (Files.exists(file) ? 1 + Long.parseLong(Files.lines(file).findFirst().get()) : 1);
@@ -104,7 +104,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     private V readObjectFromFile(Path path) {
-        return rethrowIOExAsIoErr(() -> {
+        return uncheckIOException(() -> {
             try (InputStream fileInStream = Files.newInputStream(path);
                  ObjectInput objectInStream = new ObjectInputStream(fileInStream)) {
                 return (V) objectInStream.readObject();
@@ -115,7 +115,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     private void writeObjectToFile(Object value, Path path) {
-        rethrowIOExAsIoErr(() -> {
+        uncheckIOException(() -> {
             try (OutputStream fileOutStream = Files.newOutputStream(path);
                  ObjectOutput objOutStream = new ObjectOutputStream(fileOutStream)) {
                 objOutStream.writeObject(value);
@@ -126,14 +126,14 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     private void writeSibling(Path entryDir, SiblingType siblingType, IndexType indexType, Path siblingPath) {
         Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
-        rethrowIOExAsIoErr(() ->
+        uncheckIOException(() ->
                         Files.write(linkPath, Collections.singleton(siblingPath.toString()))
         );
     }
 
     private Path getSibling(Path entryDir, SiblingType siblingType, IndexType indexType) {
         Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
-        return rethrowIOExAsIoErr(() ->
+        return uncheckIOException(() ->
                         fs.getPath(readAllLines(linkPath).get(0))
         );
     }

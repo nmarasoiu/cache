@@ -5,7 +5,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
-import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
+import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 
 /**
  * Created by nmarasoiu on 10/20/14.
@@ -17,7 +17,7 @@ public class TestUtils {
     }
 
     private static Path createRoot(Path home) {
-        return rethrowIOExAsIoErr(() -> {
+        return uncheckIOException(() -> {
             if(Files.exists(home)) throw new IllegalStateException();
             return Files.createDirectories(home);
         });

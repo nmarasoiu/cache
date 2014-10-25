@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.readKeyBytes;
-import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
+import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 
 /**
  * Created by dnmaras on 10/25/14.
@@ -56,7 +56,7 @@ public class Key<K> {
         if (!Files.exists(hashDir())) {
             return Optional.empty();
         }
-        return rethrowIOExAsIoErr(() -> {
+        return uncheckIOException(() -> {
             try (Stream<Path> list = Files.list(hashDir())) {
                 return list.filter(Files::isDirectory)
                         .filter(this::isThisMyKey)
@@ -66,7 +66,7 @@ public class Key<K> {
     }
 
     private Boolean isThisMyKey(Path entryDir) {
-        return rethrowIOExAsIoErr(() -> (Arrays.equals(readKeyBytes(entryDir), keyBytes())));
+        return uncheckIOException(() -> (Arrays.equals(readKeyBytes(entryDir), keyBytes())));
     }
 
     private String toString(byte[] bytes) {
@@ -87,7 +87,7 @@ public class Key<K> {
     }
 
     private <T> byte[] bytes(T object) {
-        return rethrowIOExAsIoErr(() -> {
+        return uncheckIOException(() -> {
             try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
                  ObjectOutput out = new ObjectOutputStream(bos)) {
                 out.writeObject(object);
