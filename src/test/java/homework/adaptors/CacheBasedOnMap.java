@@ -1,6 +1,6 @@
 package homework.adaptors;
 
-import homework.Cache;
+import homework.ExtendedCache;
 import homework.markers.NonThreadSafe;
 
 import java.util.Map;
@@ -9,7 +9,7 @@ import java.util.Map;
  * Created by dnmaras on 10/15/14.
  */
 @NonThreadSafe(comment = "Just as thread safe or not as the underlying map")
-public class CacheBasedOnMap<K, V> implements Cache<K, V> {
+public class CacheBasedOnMap<K, V> implements ExtendedCache<K, V> {
     protected Map<K, V> underlyingMap;
 
     public CacheBasedOnMap(Map<K, V> persistentMap) {

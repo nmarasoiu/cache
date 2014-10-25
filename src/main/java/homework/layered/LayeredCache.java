@@ -1,14 +1,12 @@
 package homework.layered;
 
-import homework.Cache;
+import homework.ExtendedCache;
 import homework.markers.ThreadSafe;
 
 import java.time.Instant;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 @ThreadSafe
-public class LayeredCache<K, V, CacheType extends Cache<K, V>> implements Cache<K, V> {
+public class LayeredCache<K, V, CacheType extends ExtendedCache<K, V>> implements ExtendedCache<K, V> {
     protected final CacheType memCache;
     protected final CacheType fsCache;
 

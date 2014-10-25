@@ -1,6 +1,6 @@
 package homework.filesystem;
 
-import homework.Cache;
+import homework.ExtendedCache;
 import homework.markers.NonThreadSafe;
 
 import java.io.*;
@@ -21,7 +21,7 @@ import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
  * If the filesystem has not-nice limitations in directory entries, pls use ZipFileSystem (hope that is zip64)
  */
 @NonThreadSafe
-public class FileSystemHashCache<K, V> implements Cache<K, V> {
+public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     public static final String VALUE_FILENAME = "value.bin";
     public static final String KEY_FILENAME = "key.bin";
     public static final String LAST_ENTRY_NO_FILENAME = "last.txt";

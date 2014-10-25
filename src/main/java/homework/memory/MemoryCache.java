@@ -1,10 +1,9 @@
 package homework.memory;
 
-import homework.Cache;
+import homework.ExtendedCache;
 import homework.dto.CacheConfig;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -14,24 +13,22 @@ import java.util.Optional;
  * 1. The last-write-time should not be older than cacheConfig.getMaxStalePeriod.
  * 2. The number of entries should not exceed cacheConfig.getMaxObjects.
  * <p/>
- * The elements to evict for condition 2 are the ones with oldest read-time.
+ * The elements to evict for condition 2 are the ones with oldest read/write-time.
  */
-public class MemoryCache<K, V> implements Cache<K, V> {
-    protected final Map<K, V> dataMap;
-    protected final Map<K, Boolean> readAccessOrderedMap;
-    protected final Map<K, Instant> writeAccessOrderedMap;
+public class MemoryCache<K, V> implements ExtendedCache<K, V> {
     protected final CacheConfig cacheConfig;
+    protected final Map<K, V> dataMap;
+    protected final Map<K, Instant> writeAccessOrderedMap;
 
     public MemoryCache(CacheConfig cacheConfig) {
         this.cacheConfig = cacheConfig;
-        readAccessOrderedMap = lruMap(cacheConfig.getMaxObjects());
+        dataMap = lruMap(cacheConfig.getMaxObjects());
         writeAccessOrderedMap = new LinkedHashMap<>();
-        dataMap = new HashMap<>();
     }
 
     @Override
     public V get(K key) {
-        readAccessOrderedMap.put(key, Boolean.TRUE);
+        //the current supplied key could be stale; removing in this case, so that the cache client can get a fresh version
         deleteStaleEntries();
         return dataMap.get(key);
     }
@@ -62,10 +59,10 @@ public class MemoryCache<K, V> implements Cache<K, V> {
                 });
     }
 
-    private void remove(K key) {
-        dataMap.remove(key);
-        readAccessOrderedMap.remove(key);
-        writeAccessOrderedMap.remove(key);
+    @Override
+    public boolean remove(K key) {
+        return dataMap.remove(key) != null
+                | writeAccessOrderedMap.remove(key) != null;
     }
 
     <B> Map<K, B> lruMap(Number maxObjects) {
