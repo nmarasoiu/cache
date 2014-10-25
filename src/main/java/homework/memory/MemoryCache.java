@@ -38,8 +38,8 @@ public class MemoryCache<K, V> implements Cache<K, V> {
 
     @Override
     public void put(K key, V value, Instant lastModifiedTime) {
-        writeAccessOrderedMap.put(key, lastModifiedTime);
         dataMap.put(key, value);
+        writeAccessOrderedMap.put(key, lastModifiedTime);
         deleteStaleEntries();
     }
 
