@@ -4,17 +4,16 @@ import homework.ExtendedCache;
 import homework.markers.NonThreadSafe;
 
 import java.io.*;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
+import static java.nio.file.Files.getLastModifiedTime;
+import static java.nio.file.Files.readAllLines;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -22,37 +21,58 @@ import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
  */
 @NonThreadSafe
 public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
-    public static final String VALUE_FILENAME = "value.bin";
+    protected static final String VALUE_FILENAME = "value.bin";
     public static final String KEY_FILENAME = "key.bin";
-    public static final String LAST_ENTRY_NO_FILENAME = "last.txt";
+    private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
+    private static final String PREV_RW = "prevRW", PREV_W = "prevW";
+    private static final String NEXT_RW = "prevRW", NEXT_W = "prevW";
+
     protected final Path basePath;
+    protected final FileSystem fs;
 
     public FileSystemHashCache(Path basePath) {
         this.basePath = rethrowIOExAsIoErr(() -> Files.createDirectories(basePath.normalize()));
+        this.fs = this.basePath.getFileSystem();
     }
 
     @Override
     public V get(K key) {
-        byte[] keyBytes = bytes(key);
-        return getExistingValueFile(entryDir(keyBytes), keyBytes)
+        KeyDerivates<K> keyRelated = new KeyDerivates<K>(basePath, key);
+        Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
+        if (entryDirOptional.isPresent()) {
+            Path entryDir = entryDirOptional.get();
+            //put the entry at the end of r/w access queue: link the prev to the next, and replace the endPointer
+//            removeFromLinkedList(entryDir, IndexType.ReadWrite);
+
+        } else {
+
+        }
+        return entryDirOptional
+                .map(entryDir -> entryDir.resolve(VALUE_FILENAME))
                 .map(this::readObjectFromFile)
                 .orElse(null);
     }
 
+    private void removeFromLinkedList(Path entryDir, IndexType indexType) {
+        Path previousDir = getSibling(entryDir, SiblingType.LEFT, indexType);
+        Path nextDir = getSibling(entryDir, SiblingType.RIGHT, indexType);
+        writeSibling(previousDir, SiblingType.RIGHT, indexType, nextDir);
+    }
+
     @Override
     public void put(K key, V value) {
-        byte[] keyBytes = bytes(key);
-        Path hashDir = (entryDir(keyBytes));
-        Optional<Path> maybeValueFile = getExistingValueFile(hashDir, keyBytes);
+        KeyDerivates<K> keyRelated = new KeyDerivates<>(basePath, key);
+        Optional<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
         rethrowIOExAsIoErr(() -> {
             final Path valuePath;
-            if (maybeValueFile.isPresent()) {
-                valuePath = maybeValueFile.get();
+            if (maybeEntryDir.isPresent()) {
+                Path entryDir = maybeEntryDir.get();
+                valuePath = entryDir.resolve(VALUE_FILENAME);
                 Files.delete(valuePath);
             } else {
-                Files.createDirectories(hashDir);
-                Path entryDir = Files.createDirectories(nextDir(hashDir));
-                write(keyBytes, entryDir.resolve(KEY_FILENAME));
+                Files.createDirectories(keyRelated.hashDir());
+                Path entryDir = Files.createDirectories(nextDir(keyRelated.hashDir()));
+                write(keyRelated.keyBytes(), entryDir.resolve(KEY_FILENAME));
                 valuePath = entryDir.resolve(VALUE_FILENAME);
             }
             writeObjectToFile(value, valuePath);
@@ -61,16 +81,10 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public Optional<Instant> getLastModifiedMillis(K key) {
-            Path entryDir = entryDir(bytes(key));
-            if (Files.exists(entryDir))
-                return rethrowIOExAsIoErr(()->
-                        Optional.of(Files.getLastModifiedTime(entryDir).toInstant()));
-            else
-                return Optional.<Instant>empty();
-    }
-
-    protected byte[] keyBytes(Path entryDir) throws IOException {
-        return Files.readAllBytes(entryDir.resolve(KEY_FILENAME));
+        KeyDerivates<K> keyRelated = new KeyDerivates<>(basePath, key);
+        return keyRelated.findOptionalEntryDir()
+                .map(entry -> rethrowIOExAsIoErr(() ->
+                        getLastModifiedTime(entry).toInstant()));
     }
 
     private Path nextDir(Path hashDir) {
@@ -110,60 +124,46 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     }
 
-    private Optional<Path> getExistingValueFile(Path hashDir, byte[] key) {
-        return getEntryFor(hashDir, key)
-                .map(entryDir -> entryDir.resolve(VALUE_FILENAME));
+    private void writeSibling(Path entryDir, SiblingType siblingType, IndexType indexType, Path siblingPath) {
+        Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
+        rethrowIOExAsIoErr(() ->
+                        Files.write(linkPath, Collections.singleton(siblingPath.toString()))
+        );
     }
 
-    //todo: reorder member functions (methods), by their access level (public/protected/private in this order)
-    protected Optional<Path> getEntryFor(Path hashDir, byte[] key) {
-        return Files.exists(hashDir) ?
-                rethrowIOExAsIoErr(() -> {
-                    try (Stream<Path> list = Files.list(hashDir)) {
-                        return list.filter(Files::isDirectory)
-                                .filter(entryDir -> isThisMyKey(key, entryDir))
-                                .findFirst();
-                    }
-                })
-                : Optional.empty();
+    private Path getSibling(Path entryDir, SiblingType siblingType, IndexType indexType) {
+        Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
+        return rethrowIOExAsIoErr(() ->
+                        fs.getPath(readAllLines(linkPath).get(0))
+        );
     }
 
-    private Boolean isThisMyKey(byte[] bytes, Path entryDir) {
-        return rethrowIOExAsIoErr(() -> (Arrays.equals(keyBytes(entryDir), bytes)));
+    private Path pathForSiblingLink(Path entryDir, SiblingType siblingType, IndexType indexType) {
+        return entryDir.resolve(filenameForSiblingKind(siblingType, indexType));
     }
 
-    protected Path entryDir(byte[] key) {
-        return basePath.resolve(hash(key));
-    }
-
-    private String hash(byte[] key) {
-        return toString(newDigester().digest((key)));
-    }
-
-    private String toString(byte[] bytes) {
-        StringBuilder builder = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            //todo: cache the formatter and the digester factory below, etc
-            builder.append(String.format("%02x", b));
-        }
-        return builder.toString();
-    }
-
-    private MessageDigest newDigester() {
-        try {
-            return MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected <T> byte[] bytes(T object) {
-        return rethrowIOExAsIoErr(() -> {
-            try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                 ObjectOutput out = new ObjectOutputStream(bos)) {
-                out.writeObject(object);
-                return bos.toByteArray();
+    private String filenameForSiblingKind(SiblingType sublingType, IndexType indexType) {
+        final String filename;
+        if (sublingType == SiblingType.LEFT) {
+            if (indexType == IndexType.ReadWrite) {
+                filename = PREV_RW;
+            } else if (indexType == IndexType.WriteOnly) {
+                filename = PREV_W;
+            } else {
+                throw new IllegalArgumentException("indexType must be read/write or write only");
             }
-        });
+        } else if (sublingType == SiblingType.RIGHT) {
+            if (indexType == IndexType.ReadWrite) {
+                filename = NEXT_RW;
+            } else if (indexType == IndexType.WriteOnly) {
+                filename = NEXT_W;
+            } else {
+                throw new IllegalArgumentException("indexType must be read/write or write only");
+            }
+        } else {
+            throw new IllegalArgumentException("sibling must be left/prev or right/next");
+        }
+        return filename;
     }
+
 }

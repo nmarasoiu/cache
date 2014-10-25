@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static homework.utils.BytesUtils.readKeyBytes;
 import static homework.utils.ExceptionWrappingUtils.rethrowIOExAsIoErr;
 import static homework.utils.StreamUtils.reify;
 
@@ -36,7 +37,7 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
                                 .filter(path -> Files.exists(path.resolve(KEY_FILENAME)))
                                 .filter(path -> Files.exists(path.resolve(VALUE_FILENAME)))
                                 .map(entryPath -> rethrowIOExAsIoErr(() -> {
-                                    K k = (K) fromBytes(keyBytes(entryPath));
+                                    K k = (K) fromBytes(readKeyBytes(entryPath));
                                     return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
                                         @Override
                                         public V setValue(V value) {
@@ -52,9 +53,8 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
 
     @Override
     public boolean remove(K key) {
-        byte[] b = bytes(key);
-        Path hashDir = entryDir(b);
-        Optional<Path> entryDirOpt = getEntryFor(hashDir, b);
+        KeyDerivates<K> keyRelated = new KeyDerivates<>(basePath, key);
+        Optional<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
         boolean exists = entryDirOpt.isPresent();
         if (exists)
             rethrowIOExAsIoErr((IORunnable) () -> {
