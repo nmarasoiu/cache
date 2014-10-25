@@ -68,11 +68,12 @@ public class MemoryCache<K, V> implements Cache<K, V> {
         writeAccessOrderedMap.remove(key);
     }
 
-    <A extends K, B> Map<A, B> lruMap(Number maxObjects) {
-        return new LinkedHashMap<A, B>(256, .75f, true) {
+    <B> Map<K, B> lruMap(Number maxObjects) {
+        long maxNoOfObjects = maxObjects.longValue();
+        return new LinkedHashMap<K, B>(16, .75f, true) {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<A, B> eldest) {
-                while (size() >= maxObjects.longValue()) {
+            protected boolean removeEldestEntry(Map.Entry<K, B> eldest) {
+                while (size() >= maxNoOfObjects) {
                     MemoryCache.this.remove(eldest.getKey());
                 }
                 return false;
