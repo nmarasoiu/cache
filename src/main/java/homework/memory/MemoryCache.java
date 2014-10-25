@@ -3,7 +3,6 @@ package homework.memory;
 import homework.Cache;
 import homework.dto.CacheConfig;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -28,24 +27,34 @@ public class MemoryCache<K, V> implements Cache<K, V> {
 
     @Override
     public V get(K key) {
-        return cacheOp(key, () -> dataMap.get(key), readAccessOrderedMap, Instant.now());
+        return cacheOp(key,
+                () -> dataMap.get(key),
+                readAccessOrderedMap,
+                Instant.now());
     }
 
     @Override
     public void put(K key, V value, Instant lastModifiedTime) {
-        cacheOp(key, () -> dataMap.put(key, value), writeAccessOrderedMap, lastModifiedTime);
+        cacheOp(key,
+                () -> dataMap.put(key, value),
+                writeAccessOrderedMap,
+                lastModifiedTime);
     }
 
     @Override
     public Optional<Instant> getLastModifiedMillis(K key) {
-        return Optional.of(writeAccessOrderedMap.get(key));
+        Instant value = writeAccessOrderedMap.get(key);
+        return value != null ? Optional.of(value) : Optional.empty();
     }
 
     interface Callable<V> extends java.util.concurrent.Callable<V> {
         V call();
     }
 
-    private V cacheOp(K key, Callable<V> callable, Map<K, Instant> opAccessMap, Instant lastModTime) {
+    private V cacheOp(K key,
+                      Callable<V> callable,
+                      Map<K, Instant> opAccessMap,
+                      Instant lastModTime) {
         opAccessMap.put(key, lastModTime);
         deleteStaleEntries();
         return callable.call();
@@ -55,8 +64,9 @@ public class MemoryCache<K, V> implements Cache<K, V> {
         writeAccessOrderedMap.entrySet().stream().findFirst()
                 .ifPresent(entry -> {
                     Instant lastModifiedTime = entry.getValue();
-                    Instant expiryTimeForEntry = lastModifiedTime.plus(cacheConfig.getMaxStalePeriod());
-                    if (expiryTimeForEntry.compareTo(Instant.now()) < 0) {
+                    Instant expiryTimeForEntry = lastModifiedTime.plus(
+                            cacheConfig.getMaxStalePeriod());
+                    if (expiryTimeForEntry.compareTo(Instant.now()) <= 0) {
                         remove(entry.getKey());
                         deleteStaleEntries();
                     }
