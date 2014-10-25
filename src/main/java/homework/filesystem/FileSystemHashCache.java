@@ -5,15 +5,17 @@ import homework.markers.NonThreadSafe;
 
 import java.io.*;
 import java.nio.file.FileSystem;
-import static java.nio.file.Files.*;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
+import static java.nio.file.Files.*;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -27,6 +29,14 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     protected final Path basePath;
     protected final FileSystem fs;
+    protected final Map<IndexType, Optional<Path>> tails = initialTails();
+
+    private HashMap<IndexType, Optional<Path>> initialTails() {
+        HashMap<IndexType, Optional<Path>> m = new HashMap<>();
+        m.put(IndexType.ReadWrite, Optional.<Path>empty());
+        m.put(IndexType.WriteOnly, Optional.<Path>empty());
+        return m;
+    }
 
     public FileSystemHashCache(Path basePath) {
         this.basePath = uncheckIOException(() -> createDirectories(basePath.normalize()));
@@ -39,16 +49,27 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
         if (entryDirOptional.isPresent()) {
             Path entryDir = entryDirOptional.get();
-            //put the entry at the end of r/w access queue: link the prev to the next, and replace the endPointer
-//            removeFromLinkedList(entryDir, IndexType.ReadWrite);
-
+//            rearrangeLinkedList(entryDir);
         } else {
 
         }
         return entryDirOptional
-                .map(entryDir -> valuePathForEntry(entryDir))
+                .map(Utils::valuePathForEntry)
                 .map(this::readObjectFromFile)
                 .orElse(null);
+    }
+
+    private void rearrangeLinkedList(Path entryDir) {
+        //put the entry at the end of r/w access queue: link the prev to the next, and replace the endPointer
+        rearrangeLinkedList(entryDir, IndexType.ReadWrite);
+    }
+
+    private void rearrangeLinkedList(Path entryDir, IndexType indexType) {
+        removeFromLinkedList(entryDir, indexType);
+        tails.get(indexType).ifPresent(tail -> {
+
+        });
+//            tails.put(indexType, Optional.of())
     }
 
     @Override
