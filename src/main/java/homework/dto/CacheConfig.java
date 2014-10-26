@@ -12,13 +12,13 @@ public class CacheConfig {
     }
 
     private Path basePath;
-    private Number maxObjects;
+    private long maxObjects;
 
     public Duration getMaxStalePeriod() {
         return maxStalePeriod;
     }
 
-    public Number getMaxObjects() {
+    public long getMaxObjects() {
         return maxObjects;
     }
 
@@ -26,7 +26,7 @@ public class CacheConfig {
     private Duration maxStalePeriod;
     public CacheConfig(Number maxObjects, Path basePath, Duration maxStalePeriod) {
         this.basePath = basePath;
-        this.maxObjects =  maxObjects;
+        this.maxObjects =  maxObjects.longValue();
         this.maxStalePeriod = maxStalePeriod;
     }
 

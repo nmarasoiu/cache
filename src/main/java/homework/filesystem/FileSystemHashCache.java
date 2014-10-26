@@ -1,9 +1,9 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
-import homework.option.Option;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
+import homework.option.Option;
 import homework.option.OptionFactory;
 
 import java.io.*;
@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.valuePathForEntry;
@@ -27,8 +28,6 @@ import static java.nio.file.Files.*;
 @NonThreadSafe
 public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
-    private static final String PREV_RW = "prevRW", PREV_W = "prevW";
-    private static final String NEXT_RW = "prevRW", NEXT_W = "prevW";
 
     protected final Path basePath;
     protected final FileSystem fs;
@@ -36,8 +35,8 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     private HashMap<IndexType, Optional<Path>> initialTails() {
         HashMap<IndexType, Optional<Path>> m = new HashMap<>();
-        m.put(IndexType.ReadWrite, Optional.<Path>empty());
-        m.put(IndexType.WriteOnly, Optional.<Path>empty());
+        m.put(IndexType.READ, Optional.<Path>empty());
+        m.put(IndexType.WRITE, Optional.<Path>empty());
         return m;
     }
 
@@ -48,34 +47,31 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
     @Override
     public V get(K key) {
-        return getvOptional(key)
-                .orElse(null);
+        Option<V> optionalValue = getAsInScala(key);
+        return optionalValue.isEmpty() ? null : optionalValue.get();
     }
 
     @Override
     public Option<Statistic<V>> getWrapped(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
-        return getvOptional(key)
-                .map(value -> OptionFactory.some(
-                        new Statistic<V>(value, getLastModifiedDate(keyRelated))))
-                .orElse(OptionFactory.missing());
+        return getAsInScala(key)
+                .map(value -> new Statistic<V>(value,
+                        keyRelated.findOptionalEntryDir()
+                                .map(entryPathToLastModifiedMapper())
+                                .orElse(Instant.now())));
     }
 
-    private Optional<V> getvOptional(K key) {
+    @Override
+    public Option<V> getAsInScala(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
         reindex(entryDirOptional);
 
         return entryDirOptional
                 .map(Utils::valuePathForEntry)
-                .map(this::readObjectFromFile);
-    }
-
-    private Instant getLastModifiedDate(Key<K> keyRelated) {
-        return keyRelated.findOptionalEntryDir()
-                .map(entry -> uncheckIOException(() ->
-                        getLastModifiedTime(entry).toInstant()))
-                .orElse(Instant.now());
+                        //map into Option because reading value from file can give null value
+                .map((valuePath) -> OptionFactory.some(readObjectFromFile(valuePath)))
+                .orElse(OptionFactory.missing());
     }
 
     private void reindex(Optional<Path> entryDirOptional) {
@@ -87,9 +83,14 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         }
     }
 
+    private Function<Path, Instant> entryPathToLastModifiedMapper() {
+        return entry -> uncheckIOException(() ->
+                getLastModifiedTime(entry).toInstant());
+    }
+
     private void rearrangeLinkedList(Path entryDir) {
         //put the entry at the end of r/w access queue: link the prev to the next, and replace the endPointer
-        rearrangeLinkedList(entryDir, IndexType.ReadWrite);
+        rearrangeLinkedList(entryDir, IndexType.READ);
     }
 
     private void rearrangeLinkedList(Path entryDir, IndexType indexType) {
@@ -172,31 +173,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     private Path pathForSiblingLink(Path entryDir, SiblingType siblingType, IndexType indexType) {
-        return entryDir.resolve(filenameForSiblingKind(siblingType, indexType));
-    }
-
-    private String filenameForSiblingKind(SiblingType siblingType, IndexType indexType) {
-        final String filename;
-        if (siblingType == SiblingType.LEFT) {
-            if (indexType == IndexType.ReadWrite) {
-                filename = PREV_RW;
-            } else if (indexType == IndexType.WriteOnly) {
-                filename = PREV_W;
-            } else {
-                throw new IllegalArgumentException("indexType must be read/write or write only");
-            }
-        } else if (siblingType == SiblingType.RIGHT) {
-            if (indexType == IndexType.ReadWrite) {
-                filename = NEXT_RW;
-            } else if (indexType == IndexType.WriteOnly) {
-                filename = NEXT_W;
-            } else {
-                throw new IllegalArgumentException("indexType must be read/write or write only");
-            }
-        } else {
-            throw new IllegalArgumentException("sibling must be left/prev or right/next");
-        }
-        return filename;
+        return entryDir.resolve(siblingType.name() + "_" + indexType.name());
     }
 
 }

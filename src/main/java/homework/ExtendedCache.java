@@ -11,6 +11,10 @@ import java.util.stream.Stream;
  * Created by dnmaras on 10/11/14.
  */
 public interface ExtendedCache<K, V> extends Cache<K, V> {
+    default void put(K key, V value) {
+        put(key, value, Instant.now());
+    }
+
     /**
      * Gets the value bundled with its last refresh timestamp.
      * The refresh timestamp == the time when it was last put.
@@ -24,8 +28,8 @@ public interface ExtendedCache<K, V> extends Cache<K, V> {
         throw new UnsupportedOperationException();
     }
 
-    default void put(K key, V value) {
-        put(key, value, Instant.now());
+    default  Option<V> getAsInScala(K key) {
+        throw new UnsupportedOperationException();
     }
 
     default boolean remove(K k) {

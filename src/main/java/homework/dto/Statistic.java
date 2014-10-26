@@ -8,7 +8,7 @@ import java.time.Instant;
 /**
  * Created by dnmaras on 10/25/14.
  */
-public final class Statistic<V> implements Option<V> {
+public final class Statistic<V>{
     private V value;
     private Instant lastModifiedDate;
 
@@ -21,14 +21,7 @@ public final class Statistic<V> implements Option<V> {
         return lastModifiedDate;
     }
 
-    @Override
-    public boolean isEmpty() {
-        return false;
-    }
-
-    @Override
-    public V value() {
+    public V getValue() {
         return value;
     }
-
 }

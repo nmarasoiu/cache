@@ -1,5 +1,7 @@
 package homework.option;
 
+import java.util.function.Function;
+
 /**
  * Created by dnmaras on 10/25/14.
  */
@@ -17,7 +19,12 @@ public class OptionWithValue<V> implements Option<V> {
     }
 
     @Override
-    public V value() {
+    public V get() {
         return value;
+    }
+
+    @Override
+    public <U> Option<U> map(Function<? super V, ? extends U> mapper) {
+        return new OptionWithValue<>(mapper.apply(value));
     }
 }

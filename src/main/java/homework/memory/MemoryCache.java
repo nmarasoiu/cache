@@ -2,8 +2,9 @@ package homework.memory;
 
 import homework.ExtendedCache;
 import homework.dto.CacheConfig;
-import homework.option.Option;
 import homework.dto.Statistic;
+import homework.filesystem.IndexType;
+import homework.option.Option;
 import homework.option.OptionFactory;
 
 import java.time.Instant;
@@ -20,38 +21,55 @@ import java.util.Map;
 public class MemoryCache<K, V> implements ExtendedCache<K, V> {
     protected final CacheConfig cacheConfig;
     protected final Map<K, V> dataMap;
-    protected final Map<K, Instant> writeAccessOrderedMap;
+    protected final Map<IndexType, Map<K, Instant>> accessOrderedMap;
 
     public MemoryCache(CacheConfig cacheConfig) {
         this.cacheConfig = cacheConfig;
-        dataMap = lruMap(cacheConfig.getMaxObjects());
-        writeAccessOrderedMap = new LinkedHashMap<>();
+        dataMap = new LinkedHashMap<>();
+        accessOrderedMap = new LinkedHashMap<>();
+        //order read then write is important, as we are iterating in this order when evicting
+        accessOrderedMap.put(IndexType.READ, new LinkedHashMap<>());
+        accessOrderedMap.put(IndexType.WRITE, new LinkedHashMap<>());
     }
 
     @Override
     public V get(K key) {
+        readAccessOrderedMap().put(key, Instant.now());
         //the current supplied key could be stale; removing in this case, so that the cache client can get a fresh version
-        deleteStaleEntries();
+        maybeDoSomeEviction();
         return dataMap.get(key);
     }
 
     @Override
     public void put(K key, V value, Instant lastModifiedTime) {
+        writeAccessOrderedMap().put(key, lastModifiedTime);
         dataMap.put(key, value);
-        writeAccessOrderedMap.put(key, lastModifiedTime);
-        deleteStaleEntries();
+        maybeDoSomeEviction();
     }
 
     @Override
     public Option<Statistic<V>> getWrapped(K key) {
         if (dataMap.containsKey(key))
-            return OptionFactory.some(new Statistic<V>(get(key), writeAccessOrderedMap.get(key)));
+            return OptionFactory.some(new Statistic<V>(get(key), writeAccessOrderedMap().get(key)));
         else
             return OptionFactory.missing();
     }
 
+    private void maybeDoSomeEviction() {
+        //by stale we mean entries not "put" recently; we first eagerly evict too stale entries so that the cache client can go fetch them fresh
+        deleteStaleEntries();
+        //now delete entries not recently "read"; if by any chance we evict all entries ever read and still have too many entries only "put", evict from those as well by access order
+        long numberEntriesToEvict = dataMap.size() - cacheConfig.getMaxObjects();
+        if (numberEntriesToEvict > 0) {
+            accessOrderedMap.values().stream()
+                    .flatMap(accessMap -> accessMap.entrySet().stream())
+                    .limit(numberEntriesToEvict)
+                    .forEach(entry -> remove(entry.getKey()));
+        }
+    }
+
     private void deleteStaleEntries() {
-        writeAccessOrderedMap.entrySet().stream().findFirst()
+        writeAccessOrderedMap().entrySet().stream().findFirst()
                 .ifPresent(entry -> {
                     Instant lastModifiedTime = entry.getValue();
                     Instant expiryTimeForEntry = lastModifiedTime.plus(
@@ -67,22 +85,15 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
     public boolean remove(K key) {
         boolean contains = dataMap.containsKey(key);
         dataMap.remove(key);
-        writeAccessOrderedMap.remove(key);
+        writeAccessOrderedMap().remove(key);
         return contains;
     }
 
-    <B> Map<K, B> lruMap(Number maxObjects) {
-        long maxNoOfObjects = maxObjects.longValue();
-        //todo: make this a read-access time order (not read-write)
-        return new LinkedHashMap<K, B>(16, .75f, true) {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<K, B> eldest) {
-                while (size() >= maxNoOfObjects) {
-                    MemoryCache.this.remove(eldest.getKey());
-                }
-                return false;
-            }
-        };
+    private Map<K, Instant> readAccessOrderedMap() {
+        return accessOrderedMap.get(IndexType.WRITE);
     }
 
+    private Map<K, Instant> writeAccessOrderedMap() {
+        return accessOrderedMap.get(IndexType.READ);
+    }
 }
