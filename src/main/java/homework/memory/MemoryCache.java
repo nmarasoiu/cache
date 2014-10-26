@@ -8,6 +8,7 @@ import homework.option.Option;
 import homework.option.OptionFactory;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -25,7 +26,7 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
 
     public MemoryCache(CacheConfig cacheConfig) {
         this.cacheConfig = cacheConfig;
-        dataMap = new LinkedHashMap<>();
+        dataMap = new HashMap<>();
         accessOrderedMap = new LinkedHashMap<>();
         //order read then write is important, as we are iterating in this order when evicting
         accessOrderedMap.put(IndexType.READ, new LinkedHashMap<>());
@@ -50,7 +51,9 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
     @Override
     public Option<Statistic<V>> getWrapped(K key) {
         if (dataMap.containsKey(key))
-            return OptionFactory.some(new Statistic<V>(get(key), writeAccessOrderedMap().get(key)));
+            return OptionFactory.some(
+                    new Statistic<V>(get(key),
+                            writeAccessOrderedMap().get(key)));
         else
             return OptionFactory.missing();
     }
@@ -59,9 +62,10 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
         //by stale we mean entries not "put" recently; we first eagerly evict too stale entries so that the cache client can go fetch them fresh
         deleteStaleEntries();
         //now delete entries not recently "read"; if by any chance we evict all entries ever read and still have too many entries only "put", evict from those as well by access order
-        long numberEntriesToEvict = dataMap.size() - cacheConfig.getMaxObjects();
+        long numberEntriesToEvict = dataMap.size() -
+                cacheConfig.getMaxObjects();
         if (numberEntriesToEvict > 0) {
-            accessOrderedMap.values().stream()
+                    accessOrderedMap.values().stream()
                     .flatMap(accessMap -> accessMap.entrySet().stream())
                     .limit(numberEntriesToEvict)
                     .forEach(entry -> remove(entry.getKey()));
