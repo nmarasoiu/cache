@@ -7,7 +7,6 @@ import homework.option.Option;
 import homework.option.OptionFactory;
 
 import java.io.*;
-import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
@@ -30,19 +29,11 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
 
     protected final Path basePath;
-    protected final FileSystem fs;
-    protected final Map<IndexType, Optional<Path>> tails = initialTails();
-
-    private HashMap<IndexType, Optional<Path>> initialTails() {
-        HashMap<IndexType, Optional<Path>> m = new HashMap<>();
-        m.put(IndexType.READ, Optional.<Path>empty());
-        m.put(IndexType.WRITE, Optional.<Path>empty());
-        return m;
-    }
+    private Indexer indexer;
 
     public FileSystemHashCache(Path basePath) {
         this.basePath = uncheckIOException(() -> createDirectories(basePath.normalize()));
-        this.fs = this.basePath.getFileSystem();
+        indexer = new Indexer(basePath);
     }
 
     @Override
@@ -65,7 +56,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     public Option<V> getAsInScala(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
-        reindex(entryDirOptional);
+        indexer.reindexAfterGet(entryDirOptional);
 
         return entryDirOptional
                 .map(Utils::valuePathForEntry)
@@ -74,31 +65,9 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
                 .orElse(OptionFactory.missing());
     }
 
-    private void reindex(Optional<Path> entryDirOptional) {
-        if (entryDirOptional.isPresent()) {
-            Path entryDir = entryDirOptional.get();
-//            rearrangeLinkedList(entryDir);
-        } else {
-
-        }
-    }
-
     private Function<Path, Instant> entryPathToLastModifiedMapper() {
         return entry -> uncheckIOException(() ->
                 getLastModifiedTime(entry).toInstant());
-    }
-
-    private void rearrangeLinkedList(Path entryDir) {
-        //put the entry at the end of r/w access queue: link the prev to the next, and replace the endPointer
-        rearrangeLinkedList(entryDir, IndexType.READ);
-    }
-
-    private void rearrangeLinkedList(Path entryDir, IndexType indexType) {
-        removeFromLinkedList(entryDir, indexType);
-        tails.get(indexType).ifPresent(tail -> {
-
-        });
-//            tails.put(indexType, Optional.of())
     }
 
     @Override
@@ -119,12 +88,6 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
             }
             writeObjectToFile(value, valuePath);
         });
-    }
-
-    private void removeFromLinkedList(Path entryDir, IndexType indexType) {
-        Path previousDir = getSibling(entryDir, SiblingType.LEFT, indexType);
-        Path nextDir = getSibling(entryDir, SiblingType.RIGHT, indexType);
-        writeSibling(previousDir, SiblingType.RIGHT, indexType, nextDir);
     }
 
     private Path nextDir(Path hashDir) {
@@ -157,23 +120,4 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         });
 
     }
-
-    private void writeSibling(Path entryDir, SiblingType siblingType, IndexType indexType, Path siblingPath) {
-        Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
-        uncheckIOException(() ->
-                        write(linkPath, Collections.singleton(siblingPath.toString()))
-        );
-    }
-
-    private Path getSibling(Path entryDir, SiblingType siblingType, IndexType indexType) {
-        Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
-        return uncheckIOException(() ->
-                        fs.getPath(readAllLines(linkPath).get(0))
-        );
-    }
-
-    private Path pathForSiblingLink(Path entryDir, SiblingType siblingType, IndexType indexType) {
-        return entryDir.resolve(siblingType.name() + "_" + indexType.name());
-    }
-
 }
