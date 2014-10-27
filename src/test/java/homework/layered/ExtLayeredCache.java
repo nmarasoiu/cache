@@ -1,7 +1,6 @@
 package homework.layered;
 
-import homework.ExtendedCache;
-import homework.FunctionalCache;
+import homework.ExtendedFuncCache;
 import homework.StatAwareFuncCache;
 
 import java.util.Map;
@@ -10,7 +9,7 @@ import java.util.stream.Stream;
 /**
  * Created by dnmaras on 10/19/14.
  */
-public class ExtLayeredCache<K, V> extends LayeredCache<K, V> implements ExtendedCache<K, V> {
+public class ExtLayeredCache<K, V> extends LayeredCache<K, V> implements ExtendedFuncCache<K, V> {
 
     public ExtLayeredCache(StatAwareFuncCache<K, V> memCache, StatAwareFuncCache<K, V> fsCache) {
 
@@ -23,8 +22,8 @@ public class ExtLayeredCache<K, V> extends LayeredCache<K, V> implements Extende
         return getFsCache().entryStream();
     }
 
-    private ExtendedCache getFsCache() {
-        return ((ExtendedCache)fsCache);
+    private ExtendedFuncCache getFsCache() {
+        return ((ExtendedFuncCache)fsCache);
     }
 
     @Override

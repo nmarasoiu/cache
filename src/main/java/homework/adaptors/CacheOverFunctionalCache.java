@@ -30,9 +30,4 @@ public class CacheOverFunctionalCache<K, V> implements Cache<K, V> {
         underlyingCache.put(key, value);
     }
 
-    @Override
-    public boolean remove(K key) {
-        return underlyingCache.remove(key);
-    }
-
 }

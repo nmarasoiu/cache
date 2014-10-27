@@ -1,6 +1,6 @@
 package homework.adaptors;
 
-import homework.ExtendedCache;
+import homework.ExtendedFuncCache;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -10,7 +10,7 @@ import static homework.utils.StreamUtils.reify;
 /**
  * Created by dnmaras on 10/21/14.
  */
-public class ExtCacheOnMap<K,V> extends CacheBasedOnMap<K, V> implements ExtendedCache<K, V> {
+public class ExtCacheOnMap<K,V> extends CacheBasedOnMap<K, V> implements ExtendedFuncCache<K, V> {
 
     public ExtCacheOnMap(Map<K, V> persistentMap) {
         super(persistentMap);

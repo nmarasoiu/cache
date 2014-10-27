@@ -53,7 +53,7 @@ public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String
     }
 
     private static class ConcurrentMapBasedOnCache<K, V> extends MapBasedOnCache<K, V> implements ConcurrentMap<K,V>{
-        public ConcurrentMapBasedOnCache(ExtendedCache<K, V> cache) {
+        public ConcurrentMapBasedOnCache(ExtendedFuncCache<K, V> cache) {
             super(cache);
         }
 

@@ -18,9 +18,7 @@ public interface StatAwareFuncCache<K,V> extends FunctionalCache<K,V> {
      * So we circumvent the need for a containsKey method, with the efficiency advantage at least potential.
      * This method aims toward Scala's "Map.get" which is of type K -> Option[V].
      */
-    default Option<Statistic<V>> getWrapped(K key) {
-        throw new UnsupportedOperationException();
-    }
+    Option<Statistic<V>> getWrapped(K key);
 
     void put(K key, V value, Instant lastModTime);
 

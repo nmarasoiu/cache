@@ -1,6 +1,6 @@
 package homework.layered;
 
-import homework.ExtendedCache;
+import homework.ExtendedFuncCache;
 import homework.FunctionalCache;
 import homework.StatAwareFuncCache;
 import homework.dto.CacheConfig;
@@ -18,7 +18,8 @@ import static homework.utils.StreamUtils.reify;
 /**
  * Created by dnmaras on 10/19/14.
  */
-public class ExtSegmentedCache<K, V> extends SegmentedCache<K, V, FunctionalCache<K, V>> implements ExtendedCache<K, V> {
+public class ExtSegmentedCache<K, V> extends SegmentedCache<K, V, FunctionalCache<K, V>>
+        implements ExtendedFuncCache<K, V> {
     public ExtSegmentedCache(CacheConfig cacheConfig) {
         super(cacheConfig);
     }
@@ -42,14 +43,16 @@ public class ExtSegmentedCache<K, V> extends SegmentedCache<K, V, FunctionalCach
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
         Stream<Map.Entry<K, V>> entryStream = getShards().stream()
-                .flatMap(a -> ((ExtendedCache) a).entryStream());//todo
+                .flatMap(a -> ((ExtendedFuncCache) a).entryStream());//todo
         return reify(entryStream);
     }
 
     @Override
     public boolean remove(K k) {
         FunctionalCache<K, V> shard = shard(k);
-        return shard.remove(k);
+        //todo
+        return ((ExtendedFuncCache
+                )shard).remove(k);
     }
 
 }

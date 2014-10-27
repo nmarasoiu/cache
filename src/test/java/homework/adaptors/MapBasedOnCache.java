@@ -1,6 +1,7 @@
 package homework.adaptors;
 
-import homework.ExtendedCache;
+import homework.Cache;
+import homework.ExtendedFuncCache;
 
 import java.util.*;
 
@@ -13,17 +14,17 @@ import java.util.*;
  */
 public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V> {
     //todo: do sth with this too? these are 2 views over the same cache
-    private final CacheOverFunctionalCache<K, V> cache;
-    private final ExtendedCache<K, V> extCache;
+    private final ExtendedFuncCache<K, V> cache;
+    private final Cache<K, V> cacheFunctional;
 
-    public MapBasedOnCache(ExtendedCache<K, V> extCache) {
-        this.cache = new CacheOverFunctionalCache<>(extCache);
-        this.extCache = extCache;
+    public MapBasedOnCache(ExtendedFuncCache<K, V> extCache) {
+        this.cache = (extCache);
+        this.cacheFunctional = new CacheOverFunctionalCache<>(extCache);
     }
 
     @Override
     public V get(Object key) {
-        return cache.get((K) key);
+        return cacheFunctional.get((K) key);
     }
 
     @Override
@@ -35,7 +36,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
     @Override
     public V remove(Object key) {
-        V old = cache.get((K) key);
+        V old = cacheFunctional.get((K) key);
         cache.remove((K) key);
         return old;
     }
@@ -56,7 +57,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
                 if (!(o instanceof Entry)) return false;
                 Entry<K, V> kvEntry = (Entry) o;
                 K key = kvEntry.getKey();
-                V v = cache.get(key);
+                V v = cacheFunctional.get(key);
                 if (v == kvEntry.getValue() || (v != null && v.equals(kvEntry.getValue()))) {
                     return cache.remove(key);
                 }
@@ -66,7 +67,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
             @Override
             public Iterator<Entry<K, V>> iterator() {
                 return new Iterator<Entry<K, V>>() {
-                    private final Iterator<Entry<K, V>> iterator = extCache.entryStream().iterator();
+                    private final Iterator<Entry<K, V>> iterator = cache.entryStream().iterator();
                     private Entry<K, V> current;
 
                     @Override
@@ -91,7 +92,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public int size() {
-                return (int) extCache.entryStream().count();
+                return (int) cache.entryStream().count();
             }
         };
     }

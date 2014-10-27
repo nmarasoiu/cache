@@ -1,6 +1,6 @@
 package homework.filesystem;
 
-import homework.ExtendedCache;
+import homework.ExtendedFuncCache;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -23,7 +23,7 @@ import static homework.utils.StreamUtils.reify;
 /**
  * Created by dnmaras on 10/21/14.
  */
-public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
+public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements ExtendedFuncCache<K, V> {
 
     public ExtCacheOnFilesystem(Path basePath) {
         super(basePath);

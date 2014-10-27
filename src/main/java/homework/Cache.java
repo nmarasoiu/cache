@@ -10,5 +10,4 @@ public interface Cache<K, V> {
 
     void put(K key, V value);
 
-   boolean remove(K key) ;
 }
