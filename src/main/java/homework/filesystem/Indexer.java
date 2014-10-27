@@ -1,15 +1,13 @@
 package homework.filesystem;
 
+import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
-import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
-import static java.nio.file.Files.readAllLines;
-import static java.nio.file.Files.write;
+import static java.nio.file.Files.*;
 
 /**
  * Manages 2 double linked lists, remembering the order of access, one for read and one for write.
@@ -17,87 +15,81 @@ import static java.nio.file.Files.write;
  * Each "link" is a file holding the path to an entry dir. An entry dir is base/hash/number.
  */
 public class Indexer {
-    protected final FileSystem fs;
-    protected final Path basePath;
+    public static final String TAIL_FILENAME = "tail", HEAD_FILENAME = "head";
+    private final FileSystem fs;
+    private final Path basePath;
+    private final IndexType indexType;
+    private final Path headLinkPath, tailLinkPath;
 
-    public Indexer(Path basePath) {
+    public Indexer(IndexType indexType, Path basePath) {
+        this.indexType = indexType;
         this.basePath = basePath;
         this.fs = this.basePath.getFileSystem();
+        headLinkPath = basePath.resolve(HEAD_FILENAME);
+        tailLinkPath = basePath.resolve(TAIL_FILENAME);
     }
 
-    protected final Map<EndType, Map<IndexType, Optional<Path>>> ends = getEndTypeMapHashMap();
+    public void reindex(Path entryDir) throws IOException {
+        moveAtTheEnd(entryDir);
+    }
+
+    private void moveAtTheEnd(Path entryDir) throws IOException {
+        //put the entry at the end of r/w access queue: link the prev to the next
+        removeFromLinkedList(entryDir);
+    }
+
+    private void removeFromLinkedList(Path entryDir) throws IOException {
+        Optional<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
+        Optional<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
+
+        writeSibling(entryDir, previousDir, SiblingDirection.RIGHT, nextDir);
+        writeSibling(entryDir, nextDir, SiblingDirection.LEFT, previousDir);
+    }
+
+    private Optional<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) throws IOException {
+        Path linkPath = pathForSiblingLink(entryDir, siblingDirection);
+        if (!exists(linkPath)) {
+            return Optional.empty();
+        }
+        return Optional.of(fs.getPath(readAllLines(linkPath).get(0)));
+    }
 
 
-    private void reindex(Optional<Path> entryDirOptional) {
-        if (entryDirOptional.isPresent()) {
-            Path entryDir = entryDirOptional.get();
-//            rearrangeLinkedList(entryDir);
+    private void writeSibling(Path entryDir, Optional<Path> leftSibling, SiblingDirection siblingDirection, Optional<Path> rightSibling) throws IOException {
+        if (leftSibling.isPresent()) {
+            Path linkPath = pathForSiblingLink(leftSibling.get(), siblingDirection);
+            if (!rightSibling.isPresent()) {
+                delete(linkPath);
+            } else {
+                persistLink(linkPath, rightSibling.get());
+            }
         } else {
-
+            if (siblingDirection == SiblingDirection.RIGHT) {
+                setHead(entryDir);
+            } else {
+                setTail(entryDir);
+            }
         }
     }
 
-    public void reindexAfterGet(Optional<Path> entryDirOptional) {
-
+    private Path pathForSiblingLink(Path entryDir, SiblingDirection siblingDirection) {
+        return entryDir.resolve(siblingFilename(siblingDirection));
     }
 
-
-    private void rearrangeLinkedList(Path entryDir) {
-        //put the entry at the end of r/w access queue: link the prev to the next, and replace the endPointer
-        rearrangeLinkedList(entryDir, IndexType.READ);
+    private String siblingFilename(SiblingDirection siblingDirection) {
+        return siblingDirection.name() + "_" + indexType.name();
     }
 
-    private void rearrangeLinkedList(Path entryDir, IndexType indexType) {
-        removeFromLinkedList(entryDir, indexType);
-        tails().get(indexType).ifPresent(tail -> {
-
-        });
-//            tails.put(indexType, Optional.of())
+    private void setHead(Path entryPath) throws IOException {
+        persistLink(headLinkPath, entryPath);
     }
 
-    private void removeFromLinkedList(Path entryDir, IndexType indexType) {
-        Path previousDir = getSibling(entryDir, SiblingType.LEFT, indexType);
-        Path nextDir = getSibling(entryDir, SiblingType.RIGHT, indexType);
-        writeSibling(previousDir, SiblingType.RIGHT, indexType, nextDir);
+    private void setTail(Path entryPath) throws IOException {
+        persistLink(tailLinkPath, entryPath);
     }
 
-    private void writeSibling(Path entryDir, SiblingType siblingType, IndexType indexType, Path siblingPath) {
-        Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
-        uncheckIOException(() ->
-                        write(linkPath, Collections.singleton(siblingPath.toString()))
-        );
+    private void persistLink(Path destination, Path value) throws IOException {
+        Files.write(destination, Collections.singleton(value.toString()));
     }
 
-    private Path getSibling(Path entryDir, SiblingType siblingType, IndexType indexType) {
-        Path linkPath = pathForSiblingLink(entryDir, siblingType, indexType);
-        return uncheckIOException(() ->
-                        fs.getPath(readAllLines(linkPath).get(0))
-        );
-    }
-
-    private Path pathForSiblingLink(Path entryDir, SiblingType siblingType, IndexType indexType) {
-        return entryDir.resolve(siblingType.name() + "_" + indexType.name());
-    }
-
-    private HashMap<EndType, Map<IndexType, Optional<Path>>> getEndTypeMapHashMap() {
-        HashMap<EndType, Map<IndexType, Optional<Path>>> m = new HashMap<>();
-        m.put(EndType.HEAD, initialTails());
-        m.put(EndType.TAIL, initialTails());
-        return m;
-    }
-
-    private HashMap<IndexType, Optional<Path>> initialTails() {
-        HashMap<IndexType, Optional<Path>> m = new HashMap<>();
-        m.put(IndexType.READ, Optional.<Path>empty());
-        m.put(IndexType.WRITE, Optional.<Path>empty());
-        return m;
-    }
-
-    private Map<IndexType, Optional<Path>> heads() {
-        return ends.get(EndType.HEAD);
-    }
-
-    private Map<IndexType, Optional<Path>> tails() {
-        return ends.get(EndType.TAIL);
-    }
 }

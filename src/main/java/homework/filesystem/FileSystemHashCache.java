@@ -10,8 +10,6 @@ import java.io.*;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -29,11 +27,15 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
 
     protected final Path basePath;
-    private Indexer indexer;
+    private Indexer writeIndexer;
+    private Indexer readIndexer;
 
     public FileSystemHashCache(Path basePath) {
-        this.basePath = uncheckIOException(() -> createDirectories(basePath.normalize()));
-        indexer = new Indexer(basePath);
+        this.basePath = uncheckIOException(() -> {
+            readIndexer = new Indexer(IndexType.READ, basePath);
+            writeIndexer = new Indexer(IndexType.WRITE, basePath);
+            return createDirectories(basePath.normalize());
+        });
     }
 
     @Override
@@ -56,7 +58,9 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     public Option<V> getAsInScala(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
-        indexer.reindexAfterGet(entryDirOptional);
+        if (entryDirOptional.isPresent()) {
+            uncheckIOException(() -> readIndexer.reindex(entryDirOptional.get()));
+        }
 
         return entryDirOptional
                 .map(Utils::valuePathForEntry)
