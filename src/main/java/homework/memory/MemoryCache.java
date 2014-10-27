@@ -2,6 +2,7 @@ package homework.memory;
 
 import homework.FunctionalCache;
 import homework.NowSource;
+import homework.StatAwareFuncCache;
 import homework.adaptors.CacheBasedOnMap;
 import homework.dto.CacheConfig;
 import homework.dto.Statistic;
@@ -22,7 +23,7 @@ import java.util.stream.Stream;
  * <p/>
  * The elements to evict for condition 2 are the ones with oldest read/write-time.
  */
-public class MemoryCache<K, V> implements FunctionalCache<K, V> {
+public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     protected final CacheConfig cacheConfig;
     protected final Map<K, V> dataMap;
     private final CacheBasedOnMap<K, V> dataCache;
@@ -98,14 +99,7 @@ public class MemoryCache<K, V> implements FunctionalCache<K, V> {
         return expiryTimeForEntry.isBefore(now());
     }
 
-    @Override
-    public boolean remove(K key) {
-        boolean contains = dataMap.containsKey(key);
-        simpleRemove(key);
-        return contains;
-    }
-
-    private void simpleRemove(K key) {
+    protected void simpleRemove(K key) {
         dataMap.remove(key);
         readAccessOrderedMap().remove(key);
         writeAccessOrderedMap().remove(key);

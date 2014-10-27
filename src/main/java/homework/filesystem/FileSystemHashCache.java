@@ -2,6 +2,7 @@ package homework.filesystem;
 
 import homework.FunctionalCache;
 import homework.NowSource;
+import homework.StatAwareFuncCache;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
@@ -26,7 +27,7 @@ import static java.nio.file.Files.*;
  * If the filesystem has not-nice limitations in directory entries, pls use ZipFileSystem (hope that is zip64)
  */
 @NonThreadSafe
-public class FileSystemHashCache<K, V> implements FunctionalCache<K, V> {
+public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemHashCache.class);
 
@@ -58,6 +59,11 @@ public class FileSystemHashCache<K, V> implements FunctionalCache<K, V> {
                         keyRelated.findOptionalEntryDir()
                                 .map(entryPathToLastModifiedMapper())
                                 .orElse(now())));
+    }
+
+    @Override
+    public void put(K key, V value, Instant lastModTime) {
+        //todo check this
     }
 
     @Override

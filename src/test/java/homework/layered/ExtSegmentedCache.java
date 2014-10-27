@@ -2,6 +2,7 @@ package homework.layered;
 
 import homework.ExtendedCache;
 import homework.FunctionalCache;
+import homework.StatAwareFuncCache;
 import homework.dto.CacheConfig;
 import homework.filesystem.ExtCacheOnFilesystem;
 import homework.memory.ExtMemoryCache;
@@ -26,7 +27,7 @@ public class ExtSegmentedCache<K, V> extends SegmentedCache<K, V, FunctionalCach
     protected List<FunctionalCache<K, V>> createShardMaps() {
         List<FunctionalCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
-            FunctionalCache<K, V> memCache = theMemCache();
+            StatAwareFuncCache<K, V> memCache = theMemCache();
             ExtCacheOnFilesystem<K, V> fsCache = new ExtCacheOnFilesystem<K, V>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
             shards.add(new ExtLayeredCache<>(memCache, fsCache));
         }
@@ -34,20 +35,21 @@ public class ExtSegmentedCache<K, V> extends SegmentedCache<K, V, FunctionalCach
     }
 
     @Override
-    protected FunctionalCache<K, V> theMemCache() {
+    protected StatAwareFuncCache<K, V> theMemCache() {
         return new ExtMemoryCache<K,V>(cacheConfig);
     }
 
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
         Stream<Map.Entry<K, V>> entryStream = getShards().stream()
-                .flatMap(a -> ((ExtendedCache)a).entryStream());//todo
+                .flatMap(a -> ((ExtendedCache) a).entryStream());//todo
         return reify(entryStream);
     }
 
     @Override
     public boolean remove(K k) {
-        return shard(k).remove(k);
+        FunctionalCache<K, V> shard = shard(k);
+        return shard.remove(k);
     }
 
 }

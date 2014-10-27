@@ -20,4 +20,10 @@ public class ExtMemoryCache<K, V> extends MemoryCache<K, V> implements ExtendedC
         return dataMap.entrySet().stream();
     }
 
+    @Override
+    public boolean remove(K key) {
+        boolean contains = dataMap.containsKey(key);
+        simpleRemove(key);
+        return contains;
+    }
 }

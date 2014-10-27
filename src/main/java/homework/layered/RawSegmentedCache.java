@@ -21,8 +21,9 @@ public class RawSegmentedCache<K,V> extends SegmentedCache<K,V, FunctionalCache<
     protected List<FunctionalCache<K, V>> createShardMaps() {
         List<FunctionalCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
-            FunctionalCache<K, V> memCache = theMemCache();
-            FunctionalCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
+            //todo: fix this
+            MemoryCache<K, V> memCache = (MemoryCache<K, V>) theMemCache();
+            FileSystemHashCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
             shards.add(new LayeredCache<>(memCache, fsCache));
         }
         return Collections.unmodifiableList(shards);
@@ -33,4 +34,6 @@ public class RawSegmentedCache<K,V> extends SegmentedCache<K,V, FunctionalCache<
     protected FunctionalCache<K,V> theMemCache() {
         return new MemoryCache<K, V>(cacheConfig);
     }
+
+
 }
