@@ -12,6 +12,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.valuePathForEntry;
@@ -25,6 +27,7 @@ import static java.nio.file.Files.*;
 @NonThreadSafe
 public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemHashCache.class);
 
     protected final Path basePath;
     private Indexer writeIndexer;
@@ -34,7 +37,9 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
         this.basePath = uncheckIOException(() -> {
             readIndexer = new Indexer(IndexType.READ, basePath);
             writeIndexer = new Indexer(IndexType.WRITE, basePath);
-            return createDirectories(basePath.normalize());
+            Path normalizedBase = basePath.normalize();
+            LOGGER.info("Storing fs cache at "+normalizedBase);
+            return createDirectories(normalizedBase);
         });
     }
 

@@ -36,6 +36,17 @@ public class Indexer {
     private void moveAtTheEnd(Path entryDir) throws IOException {
         //put the entry at the end of r/w access queue: link the prev to the next
         removeFromLinkedList(entryDir);
+        append(entryDir);
+    }
+
+    private void append(Path entryDir) throws IOException {
+        Optional<Path> optTail = readLink(tailLinkPath);
+        if(optTail.isPresent()){
+            Path currentTail = optTail.get();
+            Path rightLink = pathForSiblingLink(currentTail, SiblingDirection.RIGHT);
+            persistLink(rightLink, entryDir);
+        }
+        setTail(entryDir);
     }
 
     private void removeFromLinkedList(Path entryDir) throws IOException {
@@ -48,6 +59,10 @@ public class Indexer {
 
     private Optional<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) throws IOException {
         Path linkPath = pathForSiblingLink(entryDir, siblingDirection);
+        return readLink(linkPath);
+    }
+
+    private Optional<Path> readLink(Path linkPath) throws IOException {
         if (!exists(linkPath)) {
             return Optional.empty();
         }
@@ -59,7 +74,7 @@ public class Indexer {
         if (leftSibling.isPresent()) {
             Path linkPath = pathForSiblingLink(leftSibling.get(), siblingDirection);
             if (!rightSibling.isPresent()) {
-                delete(linkPath);
+                if(exists(linkPath)) delete(linkPath);
             } else {
                 persistLink(linkPath, rightSibling.get());
             }

@@ -3,16 +3,22 @@ package homework.filesystem;
 import homework.ExtendedCache;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static homework.filesystem.Utils.*;
+import static homework.filesystem.Utils.keyPathForEntry;
+import static homework.filesystem.Utils.readKeyBytes;
+import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static homework.utils.StreamUtils.reify;
 
@@ -28,25 +34,25 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
         return uncheckIOException(() -> {
-                    try (Stream<Path> pathsStream = Files.walk(basePath)) {
-                        return reify(pathsStream
-                                .filter(Files::isDirectory)
-                                .filter(path -> path.getParent() != null)
-                                .filter(path -> basePath.equals(path.getParent().getParent()))
-                                .filter(path -> Files.exists(keyPathForEntry(path)))
-                                .filter(path -> Files.exists(valuePathForEntry(path)))
-                                .map(entryPath -> uncheckIOException(() -> {
-                                    K k = (K) fromBytes(readKeyBytes(entryPath));
-                                    return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
-                                        @Override
-                                        public V setValue(V value) {
-                                            put(k, value);
-                                            return super.setValue(value);
-                                        }
-                                    };
-                                })));
-                    }
-                }
+            try (Stream<Path> pathsStream = Files.walk(basePath)) {
+                return reify(pathsStream
+                        .filter(Files::isDirectory)
+                        .filter(path -> path.getParent() != null)
+                        .filter(path -> basePath.equals(path.getParent().getParent()))
+                        .filter(path -> Files.exists(keyPathForEntry(path)))
+                        .filter(path -> Files.exists(valuePathForEntry(path)))
+                        .map(entryPath -> uncheckIOException(() -> {
+                            K k = (K) fromBytes(readKeyBytes(entryPath));
+                            return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
+                                @Override
+                                public V setValue(V value) {
+                                    put(k, value);
+                                    return super.setValue(value);
+                                }
+                            };
+                        })));
+            }
+        }
         );
     }
 
@@ -56,16 +62,27 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
         Optional<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
         boolean exists = entryDirOpt.isPresent();
         if (exists) {
-            Path entryDir = entryDirOpt.get();
-            delete(keyPathForEntry(entryDir));
-            delete(valuePathForEntry(entryDir));
-            delete(entryDir);
+            uncheckIOException(() -> recursiveDelete(entryDirOpt.get()));
         }
         return exists;
     }
 
-    private void delete(Path path) {
-        uncheckIOException(() -> Files.delete(path));
+    private void recursiveDelete(Path directory) {
+        uncheckIOException(() ->
+                Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Files.delete(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                        Files.delete(dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                }));
     }
 
     private Object fromBytes(byte[] bytes) {

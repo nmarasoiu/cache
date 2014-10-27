@@ -6,11 +6,13 @@ import homework.dto.Statistic;
 import homework.filesystem.IndexType;
 import homework.option.Option;
 import homework.option.OptionFactory;
+import homework.utils.StreamUtils;
 
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Entries are evicted from dataMap based on:
@@ -60,29 +62,27 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
 
     private void maybeDoSomeEviction() {
         //by stale we mean entries not "put" recently; we first eagerly evict too stale entries so that the cache client can go fetch them fresh
-        deleteStaleEntries();
-        //now delete entries not recently "read"; if by any chance we evict all entries ever read and still have too many entries only "put", evict from those as well by access order
-        long numberEntriesToEvict = dataMap.size() -
-                cacheConfig.getMaxObjects();
-        if (numberEntriesToEvict > 0) {
-                    accessOrderedMap.values().stream()
-                    .flatMap(accessMap -> accessMap.entrySet().stream())
-                    .limit(numberEntriesToEvict)
-                    .forEach(entry -> remove(entry.getKey()));
-        }
-    }
-
-    private void deleteStaleEntries() {
-        writeAccessOrderedMap().entrySet().stream().findFirst()
-                .ifPresent(entry -> {
+        Stream<Map.Entry<K, Instant>> staleEntries = writeAccessOrderedMap().entrySet().stream()
+                //takeWhile - no such method in Java8 (is in Scala); so I replace it with filter, but this would need optimization
+                .filter(entry -> {
                     Instant lastModifiedTime = entry.getValue();
                     Instant expiryTimeForEntry = lastModifiedTime.plus(
                             cacheConfig.getMaxStalePeriod());
-                    if (expiryTimeForEntry.compareTo(Instant.now()) <= 0) {
-                        remove(entry.getKey());
-                        deleteStaleEntries();
-                    }
+                    return (expiryTimeForEntry.compareTo(Instant.now()) <= 0);
                 });
+        //now delete entries not recently "read"; if by any chance we evict all entries ever read and still have too many entries only "put", evict from those as well by access order
+        Stream<Map.Entry<K, Instant>> accessOrderedStream =
+                Stream.of(IndexType.READ, IndexType.WRITE)
+                        .map(indexType -> accessOrderedMap.get(indexType))
+                        .flatMap(accessMap -> accessMap.entrySet().stream());
+        Stream<K> keysInEvictOrder = Stream.concat(staleEntries, accessOrderedStream)
+                .map(entry -> entry.getKey())
+                .distinct()
+                        //to do check that limit(0) bypasses all stream generation at all & serial stream generation
+                .limit(Math.max(0, dataMap.size() - cacheConfig.getMaxObjects()));
+        StreamUtils.reify(
+                keysInEvictOrder
+        ).forEach(key -> remove(key));
     }
 
     @Override
