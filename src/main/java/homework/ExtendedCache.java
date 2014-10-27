@@ -11,9 +11,6 @@ import java.util.stream.Stream;
  * Created by dnmaras on 10/11/14.
  */
 public interface ExtendedCache<K, V> extends Cache<K, V> {
-    default void put(K key, V value) {
-        put(key, value, Instant.now());
-    }
 
     /**
      * Gets the value bundled with its last refresh timestamp.

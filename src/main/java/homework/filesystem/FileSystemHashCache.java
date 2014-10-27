@@ -1,6 +1,8 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
+import homework.NowSource;
+import homework.dto.CacheConfig;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
@@ -33,12 +35,18 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     private Indexer writeIndexer;
     private Indexer readIndexer;
 
-    public FileSystemHashCache(Path basePath) {
+    private NowSource nowSource;
+
+    public FileSystemHashCache(Path basePath){
+        this(basePath, Instant::now);
+    }
+    public FileSystemHashCache(Path basePath, NowSource nowSource) {
+        this.nowSource = nowSource;
         this.basePath = uncheckIOException(() -> {
             readIndexer = new Indexer(IndexType.READ, basePath);
             writeIndexer = new Indexer(IndexType.WRITE, basePath);
             Path normalizedBase = basePath.normalize();
-            LOGGER.info("Storing fs cache at "+normalizedBase);
+            LOGGER.debug("Storing fs cache at {}", normalizedBase);
             return createDirectories(normalizedBase);
         });
     }
@@ -56,7 +64,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
                 .map(value -> new Statistic<V>(value,
                         keyRelated.findOptionalEntryDir()
                                 .map(entryPathToLastModifiedMapper())
-                                .orElse(Instant.now())));
+                                .orElse(now())));
     }
 
     @Override
@@ -83,6 +91,7 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     public void put(K key, V value) {
         Key<K> keyRelated = new Key<>(basePath, key);
         Optional<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
+//        writeIndexer.reindex(maybeEntryDir);
         uncheckIOException(() -> {
             final Path valuePath;
             if (maybeEntryDir.isPresent()) {
@@ -128,5 +137,9 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
             }
         });
 
+    }
+
+    private Instant now() {
+        return nowSource.now();
     }
 }
