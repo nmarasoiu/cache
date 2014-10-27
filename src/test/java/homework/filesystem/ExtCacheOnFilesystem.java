@@ -1,7 +1,6 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
-import homework.FunctionalCache;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -17,9 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static homework.filesystem.Utils.keyPathForEntry;
-import static homework.filesystem.Utils.readKeyBytes;
-import static homework.filesystem.Utils.valuePathForEntry;
+import static homework.filesystem.Utils.*;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static homework.utils.StreamUtils.reify;
 

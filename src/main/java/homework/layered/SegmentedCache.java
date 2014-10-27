@@ -3,9 +3,9 @@ package homework.layered;
 
 import homework.FunctionalCache;
 import homework.dto.CacheConfig;
+import homework.markers.ThreadSafe;
 import homework.option.Option;
 import homework.utils.CacheConfigBuilder;
-import homework.markers.ThreadSafe;
 
 import java.util.Collections;
 import java.util.List;

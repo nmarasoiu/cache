@@ -2,12 +2,12 @@ package homework.memory;
 
 import homework.FunctionalCache;
 import homework.NowSource;
+import homework.adaptors.CacheBasedOnMap;
 import homework.dto.CacheConfig;
 import homework.dto.Statistic;
 import homework.filesystem.IndexType;
 import homework.option.Option;
 import homework.utils.StreamUtils;
-import homework.adaptors.CacheBasedOnMap;
 
 import java.time.Instant;
 import java.util.HashMap;

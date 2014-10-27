@@ -6,6 +6,8 @@ import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
 import homework.option.OptionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -13,8 +15,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.valuePathForEntry;

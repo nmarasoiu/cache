@@ -1,7 +1,6 @@
 package homework.memory;
 
 import homework.ExtendedCache;
-import homework.FunctionalCache;
 import homework.dto.CacheConfig;
 
 import java.util.Map;
