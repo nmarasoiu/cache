@@ -12,10 +12,13 @@ import java.util.*;
  * This way we can test the Cache functionality pretty deep.
  */
 public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V> {
-    private ExtendedCache<K, V> cache;
+    //todo: do sth with this too? these are 2 views over the same cache
+    private final CacheOverFunctionalCache<K, V> cache;
+    private final ExtendedCache<K, V> extCache;
 
-    public MapBasedOnCache(ExtendedCache<K, V> cache) {
-        this.cache = cache;
+    public MapBasedOnCache(ExtendedCache<K, V> extCache) {
+        this.cache = new CacheOverFunctionalCache<>(extCache);
+        this.extCache = extCache;
     }
 
     @Override
@@ -63,7 +66,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
             @Override
             public Iterator<Entry<K, V>> iterator() {
                 return new Iterator<Entry<K, V>>() {
-                    private final Iterator<Entry<K, V>> iterator = cache.entryStream().iterator();
+                    private final Iterator<Entry<K, V>> iterator = extCache.entryStream().iterator();
                     private Entry<K, V> current;
 
                     @Override
@@ -88,7 +91,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public int size() {
-                return (int) cache.entryStream().count();
+                return (int) extCache.entryStream().count();
             }
         };
     }

@@ -1,6 +1,7 @@
 package homework.adaptors;
 
 import homework.ExtendedCache;
+import homework.FunctionalCache;
 
 import java.util.Map;
 import java.util.stream.Stream;

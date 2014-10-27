@@ -1,6 +1,7 @@
 package homework.filesystem;
 
 import homework.ExtendedCache;
+import homework.FunctionalCache;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -25,9 +26,9 @@ import static homework.utils.StreamUtils.reify;
 /**
  * Created by dnmaras on 10/21/14.
  */
-public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
+public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
 
-    public ExtendedCacheOnFilesystem(Path basePath) {
+    public ExtCacheOnFilesystem(Path basePath) {
         super(basePath);
     }
 
@@ -43,7 +44,7 @@ public class ExtendedCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> i
                         .filter(path -> Files.exists(valuePathForEntry(path)))
                         .map(entryPath -> uncheckIOException(() -> {
                             K k = (K) fromBytes(readKeyBytes(entryPath));
-                            return new AbstractMap.SimpleEntry<K, V>(k, get(k)) {
+                            return new AbstractMap.SimpleEntry<K, V>(k, get(k).get()) {
                                 @Override
                                 public V setValue(V value) {
                                     put(k, value);

@@ -1,7 +1,7 @@
 package homework;
 
-import homework.option.Option;
 import homework.dto.Statistic;
+import homework.option.Option;
 
 import java.time.Instant;
 import java.util.Map;
@@ -10,12 +10,14 @@ import java.util.stream.Stream;
 /**
  * Created by dnmaras on 10/11/14.
  */
-public interface ExtendedCache<K, V> extends Cache<K, V> {
+public interface FunctionalCache<K, V> {
+
+    void put(K key, V value);
 
     /**
      * Gets the value bundled with its last refresh timestamp.
      * The refresh timestamp == the time when it was last put.
-     *
+     * <p/>
      * But the big advantage of this method, is that we are sure that if the returned value is != null,
      * then the entry exists in the Map (the entry mapping the key to null value).
      * So we circumvent the need for a containsKey method, with the efficiency advantage at least potential.
@@ -25,7 +27,7 @@ public interface ExtendedCache<K, V> extends Cache<K, V> {
         throw new UnsupportedOperationException();
     }
 
-    default  Option<V> getAsInScala(K key) {
+    default Option<V> get(K key) {
         throw new UnsupportedOperationException();
     }
 
@@ -34,10 +36,6 @@ public interface ExtendedCache<K, V> extends Cache<K, V> {
     }
 
     default void put(K key, V value, Instant lastModTime) {
-        throw new UnsupportedOperationException();
-    }
-
-    default Stream<Map.Entry<K, V>> entryStream() {
         throw new UnsupportedOperationException();
     }
 

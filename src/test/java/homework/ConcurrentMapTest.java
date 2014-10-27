@@ -1,8 +1,8 @@
 package homework;
 
 import homework.adaptors.MapBasedOnCache;
+import homework.layered.ExtSegmentedCache;
 import homework.utils.CacheConfigBuilder;
-import homework.layered.ExtendedSegmentedCache;
 import homework.utils.TestUtils;
 import org.mapdb.ConcurrentMapInterfaceTest;
 
@@ -22,7 +22,7 @@ public class ConcurrentMapTest extends ConcurrentMapInterfaceTest<String, String
     @Override
     protected ConcurrentMap<String, String> makeEmptyMap() throws UnsupportedOperationException {
         return new ConcurrentMapBasedOnCache<>(
-                new ExtendedSegmentedCache<>(
+                new ExtSegmentedCache<>(
                 new CacheConfigBuilder()
                         .setBasePath(TestUtils.createRoot())
                         .setMaxObjects(9090)

@@ -1,7 +1,8 @@
 package homework.option;
 
-import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Created by dnmaras on 10/25/14.
@@ -15,7 +16,15 @@ import java.util.function.Function;
  */
 public interface Option<V> {
     boolean isEmpty();
+
     V get();
 
     <U> Option<U> map(Function<? super V, ? extends U> mapper);
+
+    default Stream<V> asStream() {
+        return (isPresent()) ? Stream.of(get()) : Stream.empty();
+    }
+    default boolean isPresent() {
+        return !isEmpty();
+    }
 }

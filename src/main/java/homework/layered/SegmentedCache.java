@@ -1,8 +1,9 @@
 package homework.layered;
 
 
-import homework.ExtendedCache;
+import homework.FunctionalCache;
 import homework.dto.CacheConfig;
+import homework.option.Option;
 import homework.utils.CacheConfigBuilder;
 import homework.markers.ThreadSafe;
 
@@ -13,7 +14,7 @@ import java.util.List;
  * Created by dnmaras on 10/17/14.
  */
 @ThreadSafe(comment = "Just as thread safe as the underlying shard' caches")
-public abstract class SegmentedCache<K, V, CacheType extends ExtendedCache<K, V>> implements ExtendedCache<K, V> {
+public abstract class SegmentedCache<K, V, CacheType extends FunctionalCache<K, V>> implements FunctionalCache<K, V> {
     protected static final int concurrencyFactor = 16;
     protected CacheConfig cacheConfig;
     protected List<CacheType> shards;
@@ -30,7 +31,7 @@ public abstract class SegmentedCache<K, V, CacheType extends ExtendedCache<K, V>
     }
 
     @Override
-    public V get(K key) {
+    public Option<V> get(K key) {
         return shard(key).get(key);
     }
 

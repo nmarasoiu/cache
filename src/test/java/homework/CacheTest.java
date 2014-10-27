@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
  * Created by dnmaras on 10/13/14.
  */
 public abstract class CacheTest<K, V> {
-    private ExtendedCache<K, V> cache;
+    private FunctionalCache<K, V> cache;
 
     @Before
     public void arrange() {
@@ -48,7 +48,7 @@ public abstract class CacheTest<K, V> {
 
     private void checkPutAndGet(K key, V value) {
         cache.put(key, value);
-        V actual = cache.get(key);
+        V actual = cache.get(key).get();
         assertEquals(value, actual);
     }
 

@@ -1,18 +1,23 @@
 package homework.layered;
 
-import homework.ExtendedCache;
+import homework.FunctionalCache;
 import homework.dto.Statistic;
 import homework.markers.ThreadSafe;
 import homework.option.Option;
+import homework.option.OptionFactory;
+import homework.utils.Pair;
 
 import java.time.Instant;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 @ThreadSafe
-public class LayeredCache<K, V> implements ExtendedCache<K, V> {
-    protected final ExtendedCache<K, V> memCache;
-    protected final ExtendedCache<K, V> fsCache;
+public class LayeredCache<K, V> implements FunctionalCache<K, V> {
+    protected final FunctionalCache<K, V> memCache;
+    protected final FunctionalCache<K, V> fsCache;
 
-    public LayeredCache(ExtendedCache<K, V> memCache, ExtendedCache<K, V> fsCache) {
+    public LayeredCache(FunctionalCache<K, V> memCache, FunctionalCache<K, V> fsCache) {
         this.memCache = memCache;
         this.fsCache = fsCache;
     }
@@ -20,25 +25,45 @@ public class LayeredCache<K, V> implements ExtendedCache<K, V> {
     @Override
     //we use synchronized, as the simplest; I would still consider locks for ability to let interrupt
     //read-write locks are not options because the "read" actually is also a potential write op
-    public synchronized V get(K key) {
-        Option<Statistic<V>> maybeValueWithStats = getStatisticOption(key);
-        if (maybeValueWithStats.isEmpty()) {
-            return null;
-        }
-        Statistic<V> stat = maybeValueWithStats.get();
-        V value = stat.getValue();
-        Instant lastModifiedDate = stat.getLastModifiedDate();
-        memCache.put(key, value, lastModifiedDate);
-        return value;
-    }
+    public synchronized Option<V> get(K key) {
+        class CacheAndCallback<K, V> extends Pair<FunctionalCache<K, V>, Consumer<Statistic<V>>> {
 
-    private Option<Statistic<V>> getStatisticOption(K key) {
-        Option<Statistic<V>> maybeValueWithStats;
-        maybeValueWithStats = memCache.getWrapped(key);
-        if (maybeValueWithStats.isEmpty()) {
-            maybeValueWithStats = fsCache.getWrapped(key);
+            CacheAndCallback(FunctionalCache<K, V> cache, Consumer<Statistic<V>> callback) {
+                super(cache, callback);
+            }
+
+            public CacheAndCallback(FunctionalCache<K, V> cache) {
+                this(cache, statistic -> {
+                });
+            }
+
         }
-        return maybeValueWithStats;
+        Stream<CacheAndCallback<K, V>> cachesWithCallbackPairs =
+                Stream.of(new CacheAndCallback<K, V>(memCache),
+                        new CacheAndCallback<K, V>(fsCache, statistic -> {
+                            V value = statistic.getValue();
+                            Instant lastModifiedDate = statistic.getLastModifiedDate();
+                            memCache.put(key, value, lastModifiedDate);
+                        }));
+
+        Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
+                cacheHitOptionalWithCallbackPairs
+                = cachesWithCallbackPairs
+                .map(pair -> new Pair<>(pair.getFirst().getWrapped(key), pair.getSecond()));
+
+        Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
+                cacheHitAndCallbackPairs = cacheHitOptionalWithCallbackPairs.filter(pair -> pair.getFirst().isPresent());
+
+        Optional<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
+                cacheHitAndCallbackIfAny = cacheHitAndCallbackPairs.findFirst();
+
+        //execute callback if any
+        cacheHitAndCallbackIfAny.ifPresent(pair -> pair.getSecond().accept(pair.getFirst().get()));
+
+        //select just the cache hit if any (discard callback, unwrap)
+        Optional<Statistic<V>> optionalStat = cacheHitAndCallbackIfAny.map(pair -> pair.getFirst().get());
+        Option<Statistic<V>> optionValueWithStat = OptionFactory.from(optionalStat);
+        return optionValueWithStat.map(stat -> stat.getValue());
     }
 
     @Override

@@ -29,7 +29,7 @@ public class Indexer {
         tailLinkPath = basePath.resolve(TAIL_FILENAME);
     }
 
-    public void reindex(Path entryDir) throws IOException {
+    public void touch(Path entryDir) throws IOException {
         moveAtTheEnd(entryDir);
     }
 

@@ -1,8 +1,7 @@
 package homework.filesystem;
 
-import homework.ExtendedCache;
+import homework.FunctionalCache;
 import homework.NowSource;
-import homework.dto.CacheConfig;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
@@ -27,7 +26,7 @@ import static java.nio.file.Files.*;
  * If the filesystem has not-nice limitations in directory entries, pls use ZipFileSystem (hope that is zip64)
  */
 @NonThreadSafe
-public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
+public class FileSystemHashCache<K, V> implements FunctionalCache<K, V> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemHashCache.class);
 
@@ -52,15 +51,9 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     @Override
-    public V get(K key) {
-        Option<V> optionalValue = getAsInScala(key);
-        return optionalValue.isEmpty() ? null : optionalValue.get();
-    }
-
-    @Override
     public Option<Statistic<V>> getWrapped(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
-        return getAsInScala(key)
+        return get(key)
                 .map(value -> new Statistic<V>(value,
                         keyRelated.findOptionalEntryDir()
                                 .map(entryPathToLastModifiedMapper())
@@ -68,11 +61,12 @@ public class FileSystemHashCache<K, V> implements ExtendedCache<K, V> {
     }
 
     @Override
-    public Option<V> getAsInScala(K key) {
+    public Option<V> get(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
         if (entryDirOptional.isPresent()) {
-            uncheckIOException(() -> readIndexer.reindex(entryDirOptional.get()));
+            System.out.println(entryDirOptional.get().toAbsolutePath());
+//            uncheckIOException(() -> readIndexer.touch(entryDirOptional.get()));
         }
 
         return entryDirOptional

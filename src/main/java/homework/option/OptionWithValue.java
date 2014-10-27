@@ -12,7 +12,6 @@ public class OptionWithValue<V> implements Option<V> {
         this.value = value;
     }
 
-
     @Override
     public boolean isEmpty() {
         return false;

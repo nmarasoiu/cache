@@ -1,13 +1,13 @@
 package homework.memory;
 
-import homework.ExtendedCache;
+import homework.FunctionalCache;
 import homework.NowSource;
 import homework.dto.CacheConfig;
 import homework.dto.Statistic;
 import homework.filesystem.IndexType;
 import homework.option.Option;
-import homework.option.OptionFactory;
 import homework.utils.StreamUtils;
+import homework.adaptors.CacheBasedOnMap;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -22,31 +22,35 @@ import java.util.stream.Stream;
  * <p/>
  * The elements to evict for condition 2 are the ones with oldest read/write-time.
  */
-public class MemoryCache<K, V> implements ExtendedCache<K, V> {
+public class MemoryCache<K, V> implements FunctionalCache<K, V> {
     protected final CacheConfig cacheConfig;
     protected final Map<K, V> dataMap;
+    private final CacheBasedOnMap<K, V> dataCache;
     protected final Map<IndexType, Map<K, Instant>> accessOrderedMap;
     private NowSource nowSource;
 
-    public MemoryCache(CacheConfig cacheConfig){
+    public MemoryCache(CacheConfig cacheConfig) {
         this(cacheConfig, Instant::now);
     }
+
     //testing constructor, to simulate time
     MemoryCache(CacheConfig cacheConfig, NowSource nowSource) {
         this.cacheConfig = cacheConfig;
         this.nowSource = nowSource;
-        dataMap = new HashMap<>();
+        //todo: do something with this! just one..
+        dataMap =new HashMap<K, V>();
+        dataCache = new CacheBasedOnMap<>(dataMap);
         accessOrderedMap = new HashMap<>();
         accessOrderedMap.put(IndexType.READ, new LinkedHashMap<>());
         accessOrderedMap.put(IndexType.WRITE, new LinkedHashMap<>());
     }
 
     @Override
-    public V get(K key) {
+    public Option<V> get(K key) {
         readAccessOrderedMap().put(key, now());
         //the current supplied key could be stale; removing in this case, so that the cache client can get a fresh version
         maybeDoSomeEviction();
-        return dataMap.get(key);
+        return dataCache.get(key);
     }
 
     @Override
@@ -60,15 +64,12 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
         dataMap.put(key, value);
         maybeDoSomeEviction();
     }
-
     @Override
     public Option<Statistic<V>> getWrapped(K key) {
-        if (dataMap.containsKey(key))
-            return OptionFactory.some(
-                    new Statistic<V>(get(key),
-                            writeAccessOrderedMap().get(key)));
-        else
-            return OptionFactory.missing();
+
+        return get(key).map(value ->
+                new Statistic<V>(value,
+                        writeAccessOrderedMap().get(key)));
     }
 
     private void maybeDoSomeEviction() {
