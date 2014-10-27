@@ -32,25 +32,26 @@ public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implem
     @Override
     public Stream<Map.Entry<K, V>> entryStream() {
         return uncheckIOException(() -> {
-            try (Stream<Path> pathsStream = Files.walk(basePath)) {
-                return reify(pathsStream
-                        .filter(Files::isDirectory)
-                        .filter(path -> path.getParent() != null)
-                        .filter(path -> basePath.equals(path.getParent().getParent()))
-                        .filter(path -> Files.exists(keyPathForEntry(path)))
-                        .filter(path -> Files.exists(valuePathForEntry(path)))
-                        .map(entryPath -> uncheckIOException(() -> {
-                            K k = (K) fromBytes(readKeyBytes(entryPath));
-                            return new AbstractMap.SimpleEntry<K, V>(k, get(k).get()) {
-                                @Override
-                                public V setValue(V value) {
-                                    put(k, value);
-                                    return super.setValue(value);
-                                }
-                            };
-                        })));
-            }
-        }
+                    try (Stream<Path> pathsStream = Files.walk(basePath)) {
+                        return reify(pathsStream
+                                .filter(Files::isDirectory)
+                                .filter(path -> path.getParent() != null)
+                                .filter(path -> basePath.equals(path.getParent().getParent()))
+                                .filter(path -> Files.exists(keyPathForEntry(path)))
+                                .filter(path -> Files.exists(valuePathForEntry(path)))
+                                .map(entryPath ->
+                                        uncheckIOException(() -> {
+                                            K k = (K) fromBytes(readKeyBytes(entryPath));
+                                            return new AbstractMap.SimpleEntry<K, V>(k, get(k).get()) {
+                                                @Override
+                                                public V setValue(V value) {
+                                                    put(k, value);
+                                                    return super.setValue(value);
+                                                }
+                                            };
+                                        })));
+                    }
+                }
         );
     }
 
