@@ -29,8 +29,7 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
     public MemoryCache(CacheConfig cacheConfig) {
         this.cacheConfig = cacheConfig;
         dataMap = new HashMap<>();
-        accessOrderedMap = new LinkedHashMap<>();
-        //order read then write is important, as we are iterating in this order when evicting
+        accessOrderedMap = new HashMap<>();
         accessOrderedMap.put(IndexType.READ, new LinkedHashMap<>());
         accessOrderedMap.put(IndexType.WRITE, new LinkedHashMap<>());
     }
@@ -62,35 +61,41 @@ public class MemoryCache<K, V> implements ExtendedCache<K, V> {
 
     private void maybeDoSomeEviction() {
         //by stale we mean entries not "put" recently; we first eagerly evict too stale entries so that the cache client can go fetch them fresh
-        Stream<Map.Entry<K, Instant>> staleEntries = writeAccessOrderedMap().entrySet().stream()
+        Stream<K> staleEntries =
+                writeAccessOrderedMap().entrySet().stream()
                 //takeWhile - no such method in Java8 (is in Scala); so I replace it with filter, but this would need optimization
-                .filter(entry -> {
-                    Instant lastModifiedTime = entry.getValue();
-                    Instant expiryTimeForEntry = lastModifiedTime.plus(
-                            cacheConfig.getMaxStalePeriod());
-                    return (expiryTimeForEntry.compareTo(Instant.now()) <= 0);
-                });
+                .filter(this::isStale)
+                .map(entry -> entry.getKey());
         //now delete entries not recently "read"; if by any chance we evict all entries ever read and still have too many entries only "put", evict from those as well by access order
-        Stream<Map.Entry<K, Instant>> accessOrderedStream =
+        Stream<K> accessOrderedStream =
                 Stream.of(IndexType.READ, IndexType.WRITE)
-                        .map(indexType -> accessOrderedMap.get(indexType))
-                        .flatMap(accessMap -> accessMap.entrySet().stream());
-        Stream<K> keysInEvictOrder = Stream.concat(staleEntries, accessOrderedStream)
-                .map(entry -> entry.getKey())
-                .distinct()
+                        .flatMap(indexType -> accessOrderedMap.get(indexType).keySet().stream());
+        Stream<K> keysInEvictOrder =
+                Stream.concat(staleEntries, accessOrderedStream)
+//                .distinct()//todo: is this needed?
                         //to do check that limit(0) bypasses all stream generation at all & serial stream generation
                 .limit(Math.max(0, dataMap.size() - cacheConfig.getMaxObjects()));
-        StreamUtils.reify(
-                keysInEvictOrder
-        ).forEach(key -> remove(key));
+        StreamUtils.reify(keysInEvictOrder).forEach(this::simpleRemove);
+    }
+
+    private boolean isStale(Map.Entry<K, Instant> entry) {
+        Instant lastModifiedTime = entry.getValue();
+        Instant expiryTimeForEntry = lastModifiedTime.plus(
+                cacheConfig.getMaxStalePeriod());
+        return expiryTimeForEntry.isBefore(Instant.now());
     }
 
     @Override
     public boolean remove(K key) {
         boolean contains = dataMap.containsKey(key);
-        dataMap.remove(key);
-        writeAccessOrderedMap().remove(key);
+        simpleRemove(key);
         return contains;
+    }
+
+    private void simpleRemove(K key) {
+        dataMap.remove(key);
+        readAccessOrderedMap().remove(key);
+        writeAccessOrderedMap().remove(key);
     }
 
     private Map<K, Instant> readAccessOrderedMap() {
