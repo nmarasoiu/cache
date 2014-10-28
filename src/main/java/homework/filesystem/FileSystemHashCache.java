@@ -150,7 +150,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                 write(keyPathForEntry(entryDir), keyRelated.keyBytes());
                 valuePath = valuePathForEntry(entryDir);
             }
-            writeObjectToFile(value.getValue()//todo
+            writeObjectToFile(value.getValue()//todo, hai sa despartim put/stat de get/stat
                     , valuePath);
         });
     }
