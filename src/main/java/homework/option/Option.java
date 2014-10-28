@@ -1,8 +1,8 @@
 package homework.option;
 
-import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -22,7 +22,9 @@ public abstract class Option<V> {
     public boolean isPresent() {
         return !isEmpty();
     }
+
     public abstract <U> Option<U> flatMap(Function<? super V, Option<U>> mapper);
+
     public abstract <U> Option<U> map(Function<? super V, ? extends U> mapper);
 
     Stream<V> asStream() {
@@ -32,6 +34,7 @@ public abstract class Option<V> {
     public static <V> Option<V> empty() {
         return MISSING;
     }
+
     public static <V> Option<V> none() {
         return MISSING;
     }
@@ -46,6 +49,11 @@ public abstract class Option<V> {
 
     public static <V> Option<V> from(Optional<V> optional) {
         return optional.isPresent() ? some(optional.get()) : MISSING;
+    }
+
+    public void ifPresent(Consumer<V> consumer) {
+        if (isPresent())
+            consumer.accept(get());
     }
 
     public V orElse(V val) {
@@ -69,10 +77,12 @@ public abstract class Option<V> {
         public V get() {
             return value;
         }
+
         @Override
         public <U> Option<U> map(Function<? super V, ? extends U> mapper) {
             return new OptionWithValue<>(mapper.apply(value));
         }
+
         @Override
         public <U> Option<U> flatMap(Function<? super V, Option<U>> mapper) {
             return mapper.apply(value);

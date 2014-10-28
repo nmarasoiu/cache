@@ -5,6 +5,7 @@ import homework.StatAwareFuncCache;
 import homework.dto.Statistic;
 import homework.markers.ThreadSafe;
 import homework.option.Option;
+import homework.utils.LazyValue;
 import homework.utils.Pair;
 
 import java.util.function.Consumer;
@@ -22,55 +23,43 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
 
     @Override
     public synchronized Option<V> get(K key) {
-        class CacheAndCallback<K, V> extends Pair<StatAwareFuncCache<K, V>, Consumer<Statistic<V>>> {
-            CacheAndCallback(StatAwareFuncCache<K, V> cache, Consumer<Statistic<V>> callback) {
-                super(cache, callback);
-            }
-        }
-        Stream<CacheAndCallback<K, V>> cachesWithCallbackPairs =
+        Option<CacheAndCallback<K, V>> cacheHitAndCallbackIfAny = Option.from(
                 Stream.of(
-                        new CacheAndCallback<K, V>(memCache, statistic -> {
+                        new CacheAndCallback<>(memCache, statistic -> {
                         }),
-                        new CacheAndCallback<K, V>(fsCache, statistic -> memCache.put(key, statistic)));
-
-        Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
-                cacheHitOptionWithCallbackPairs
-                = cachesWithCallbackPairs
-                .map(pair -> new Pair<>(pair.getFirst().get(key), pair.getSecond()));
-
-        Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
-                cacheHitAndCallbackPairs =
-                cacheHitOptionWithCallbackPairs
-                        .filter(pair -> pair.getFirst().isPresent());
-
-        Option<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
-                cacheHitAndCallbackIfAny = Option.from(cacheHitAndCallbackPairs.findFirst());
+                        new CacheAndCallback<>(fsCache, statistic -> memCache.put(key, statistic))
+                )
+                        .filter(pair -> pair.getFirst().get(key).isPresent())
+                        .findFirst());
 
         //execute callback if any
-        if (cacheHitAndCallbackIfAny.isPresent()) {
-            Pair<Option<Statistic<V>>, Consumer<Statistic<V>>> pair = cacheHitAndCallbackIfAny.get();
-            pair.getSecond().accept(pair.getFirst().get());
-        }
+        cacheHitAndCallbackIfAny.ifPresent(pair -> pair.getSecond().accept(pair.getFirst().get(key).get()));
 
         //select just the cache hit if any (discard callback, unwrap)
-        Option<Statistic<V>> optionValueWithStat = cacheHitAndCallbackIfAny.map(pair -> pair.getFirst().get());
-        return optionValueWithStat.map(stat -> stat.getValue());
+        return cacheHitAndCallbackIfAny.map(pair -> pair.getFirst().get(key).get()).map(stat -> stat.getValue());
     }
+
 
     @Override
     public synchronized void put(K key, V value) {
-        //todo: optimize this, it creates new instance every time
         memCache.toSimpleCache().put(key, value);
         fsCache.toSimpleCache().put(key, value);
     }
 
     @Override
     public synchronized boolean remove(K k) {
-        return /*memCache.remove(k) |*/ fsCache.remove(k);
+        memCache.remove(k);
+        return fsCache.remove(k);
     }
 
     @Override
     public Stream<Stream<K>> lazyKeyStream() {
         return fsCache.lazyKeyStream();
+    }
+}
+
+class CacheAndCallback<K, V> extends Pair<StatAwareFuncCache<K, V>, Consumer<Statistic<V>>> {
+    CacheAndCallback(StatAwareFuncCache<K, V> cache, Consumer<Statistic<V>> callback) {
+        super(cache, callback);
     }
 }
