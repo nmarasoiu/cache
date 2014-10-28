@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 import static homework.utils.StreamUtils.systemClock;
 
 /**
- * Entries are evicted from dataMap based on:
+ * Entries are evicted from dataCache based on:
  * 1. The last-write-time should not be older than cacheConfig.getMaxStalePeriod.
  * 2. The number of entries should not exceed cacheConfig.getMaxObjects.
  * <p/>
@@ -26,8 +26,7 @@ import static homework.utils.StreamUtils.systemClock;
  */
 public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     protected final CacheConfig cacheConfig;
-    protected final Map<K, V> dataMap;
-    private final CacheBasedOnMap<K, V> dataCache;
+    private final CacheBasedOnMap<K, V> dataCache;//todo create an interface for Cache+size
     protected final Map<IndexType, Map<K, Instant>> accessOrderedMap;
     private Iterator<Instant> nowSource;
 
@@ -39,25 +38,18 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     MemoryCache(CacheConfig cacheConfig, Stream<Instant> nowSource) {
         this.nowSource = nowSource.iterator();
         this.cacheConfig = cacheConfig;
-        //todo: do something with this! just one..
-        dataMap =new HashMap<K, V>();
-        dataCache = new CacheBasedOnMap<>(dataMap);
+        dataCache = new CacheBasedOnMap<>(new HashMap<>());
         accessOrderedMap = new HashMap<>();
         accessOrderedMap.put(IndexType.READ, new LinkedHashMap<>());
         accessOrderedMap.put(IndexType.WRITE, new LinkedHashMap<>());
     }
 
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
-        return dataMap.keySet().stream().map(key->Stream.of(key));
-    }
-
-    @Override
     public void put(K key, Statistic<V> stat) {
-        //todo - is this the right place to inject now? i guess so, because unless it comes with a timestamp from filesystem using the explicit Statistic constructor, it means it is a normal value put, and that is a fresh one
+        //to do - is this the right place to inject now? i guess so, because unless it comes with a timestamp from filesystem using the explicit Statistic constructor, it means it is a normal value put, and that is a fresh one
         Instant lastModTimestamp = stat.getLastModifiedDate().orElse(nowSource.next());
         writeAccessOrderedMap().put(key, lastModTimestamp);
-        dataMap.put(key, stat.getValue());
+        dataCache.put(key, stat.getValue());
         maybeDoSomeEviction();
     }
 
@@ -78,10 +70,18 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
 
     @Override
     public boolean remove(K key) {
-        boolean contains = dataMap.containsKey(key);
+        boolean contains = dataCache.get(key).isPresent();
         simpleRemove(key);
         return contains;
     }
+
+    @Override
+    public Stream<Stream<K>> lazyKeyStream() {
+        return dataCache.lazyKeyStream()
+                .flatMap(a->a)//flatten
+                .map(key->Stream.of(key));
+    }
+
     private void maybeDoSomeEviction() {
         //by stale we mean entries not "put" recently; we first eagerly evict too stale entries so that the cache client can go fetch them fresh
         Stream<K> staleEntries =
@@ -97,7 +97,7 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
                 Stream.concat(staleEntries, accessOrderedStream)
 //                .distinct()//todo: is this needed?
                         //to do check that limit(0) bypasses all stream generation at all & serial stream generation
-                        .limit(Math.max(0, dataMap.size() - cacheConfig.getMaxObjects()));
+                        .limit(Math.max(0, dataCache.size() - cacheConfig.getMaxObjects()));
         StreamUtils.reify(keysInEvictOrder).forEach(this::simpleRemove);
     }
 
@@ -109,7 +109,7 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     protected void simpleRemove(K key) {
-        dataMap.remove(key);
+        dataCache.remove(key);
         readAccessOrderedMap().remove(key);
         writeAccessOrderedMap().remove(key);
     }
@@ -125,4 +125,5 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     private Instant now() {
         return nowSource.next();
     }
+
 }

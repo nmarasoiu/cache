@@ -43,4 +43,7 @@ public class CacheBasedOnMap<K, V> implements FunctionalCache<K, V> {
         return contains;
     }
 
+    public long size() {
+        return underlyingMap.size();
+    }
 }
