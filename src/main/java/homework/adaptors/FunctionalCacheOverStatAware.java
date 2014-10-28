@@ -5,7 +5,6 @@ import homework.StatAwareFuncCache;
 import homework.dto.Statistic;
 import homework.option.Option;
 
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**

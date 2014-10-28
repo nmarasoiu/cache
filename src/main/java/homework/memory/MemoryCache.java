@@ -1,6 +1,5 @@
 package homework.memory;
 
-import homework.NowSource;
 import homework.StatAwareFuncCache;
 import homework.adaptors.CacheBasedOnMap;
 import homework.dto.CacheConfig;
@@ -11,9 +10,12 @@ import homework.utils.StreamUtils;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import static homework.utils.StreamUtils.systemClock;
 
 /**
  * Entries are evicted from dataMap based on:
@@ -27,16 +29,16 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     protected final Map<K, V> dataMap;
     private final CacheBasedOnMap<K, V> dataCache;
     protected final Map<IndexType, Map<K, Instant>> accessOrderedMap;
-    private NowSource nowSource;
+    private Iterator<Instant> nowSource;
 
     public MemoryCache(CacheConfig cacheConfig) {
-        this(cacheConfig, Instant::now);
+        this(cacheConfig, systemClock());
     }
 
     //testing constructor, to simulate time
-    MemoryCache(CacheConfig cacheConfig, NowSource nowSource) {
+    MemoryCache(CacheConfig cacheConfig, Stream<Instant> nowSource) {
+        this.nowSource = nowSource.iterator();
         this.cacheConfig = cacheConfig;
-        this.nowSource = nowSource;
         //todo: do something with this! just one..
         dataMap =new HashMap<K, V>();
         dataCache = new CacheBasedOnMap<>(dataMap);
@@ -52,7 +54,9 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
 
     @Override
     public void put(K key, Statistic<V> stat) {
-        writeAccessOrderedMap().put(key, stat.getLastModifiedDate().orElse(nowSource.now()));
+        //todo - is this the right place to inject now? i guess so, because unless it comes with a timestamp from filesystem using the explicit Statistic constructor, it means it is a normal value put, and that is a fresh one
+        Instant lastModTimestamp = stat.getLastModifiedDate().orElse(nowSource.next());
+        writeAccessOrderedMap().put(key, lastModTimestamp);
         dataMap.put(key, stat.getValue());
         maybeDoSomeEviction();
     }
@@ -119,6 +123,6 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     private Instant now() {
-        return nowSource.now();
+        return nowSource.next();
     }
 }

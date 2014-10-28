@@ -1,6 +1,5 @@
 package homework.filesystem;
 
-import homework.NowSource;
 import homework.StatAwareFuncCache;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
@@ -24,6 +23,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -33,6 +33,7 @@ import static homework.filesystem.Utils.readKeyBytes;
 import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static homework.utils.StreamUtils.streamFrom;
+import static homework.utils.StreamUtils.systemClock;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.exists;
@@ -54,20 +55,20 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemHashCache.class);
 
     protected final Path basePath;
-    private Indexer writeIndexer;
-    private Indexer readIndexer;
+    private final Indexer writeIndexer;
+    private final Indexer readIndexer;
 
-    private NowSource nowSource;//todo transform in stream<Intant>
+    private final Iterator<Instant> nowSource;
 
     public FileSystemHashCache(Path basePath) {
-        this(basePath, Instant::now);
+        this(basePath, systemClock());
     }
 
-    public FileSystemHashCache(Path basePath, NowSource nowSource) {
-        this.nowSource = nowSource;
+    public FileSystemHashCache(Path basePath, Stream<Instant> nowSource) {
+        this.nowSource = nowSource.iterator();
+        readIndexer = new Indexer(IndexType.READ, basePath);
+        writeIndexer = new Indexer(IndexType.WRITE, basePath);
         this.basePath = uncheckIOException(() -> {
-            readIndexer = new Indexer(IndexType.READ, basePath);
-            writeIndexer = new Indexer(IndexType.WRITE, basePath);
             Path normalizedBase = basePath.normalize();
             LOGGER.debug("Storing fs cache at {}", normalizedBase);
             return createDirectories(normalizedBase);
@@ -84,7 +85,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                                 .orElse(now())));
     }
 
-//    @Override
+    //    @Override
     public Option<V> getVal(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
@@ -113,7 +114,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     private Stream<Path> listDirs(Path parent) {
-        return uncheckIOException (()->list(parent).filter(f->isDirectory(f)));
+        return uncheckIOException(() -> list(parent).filter(f -> isDirectory(f)));
     }
 
     @Override
@@ -186,7 +187,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     private Instant now() {
-        return nowSource.now();
+        return nowSource.next();
     }
 
     private void recursiveDelete(Path directory) {

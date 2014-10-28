@@ -1,5 +1,6 @@
 package homework.utils;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -18,8 +19,12 @@ public final class StreamUtils {
         return list.stream();
     }
     public static  <V> Stream<V> streamFrom(IOCallable<V> callable) {
+        //todo replace with generate from Supplier
         return Stream.of(1).map(any -> uncheckIOException(callable));
     }
 
+    public static Stream<Instant> systemClock() {
+        return Stream.generate(() -> Instant.now());
+    }
 
 }

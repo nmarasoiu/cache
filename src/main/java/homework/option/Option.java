@@ -1,6 +1,5 @@
 package homework.option;
 
-import java.time.Instant;
 import java.util.function.Function;
 import java.util.stream.Stream;
 

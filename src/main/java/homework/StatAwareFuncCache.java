@@ -2,9 +2,6 @@ package homework;
 
 import homework.adaptors.FunctionalCacheOverStatAware;
 import homework.dto.Statistic;
-import homework.option.Option;
-
-import java.time.Instant;
 
 /**
  * Created by dnmaras on 10/27/14.
