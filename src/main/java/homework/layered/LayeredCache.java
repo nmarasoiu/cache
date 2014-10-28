@@ -10,6 +10,7 @@ import homework.utils.Pair;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -66,8 +67,7 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
     public synchronized boolean remove(K key) {
         return caches.stream()
                 .map(cache -> cache.remove(key))
-                .max((o1, o2) -> 1)
-                .get();
+                .reduce(true, (removed1, removed2) -> /*removed1||*/removed2);
     }
 
     @Override
