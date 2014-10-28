@@ -46,35 +46,30 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     @Override
-    public Option<V> get(K key) {
-        readAccessOrderedMap().put(key, now());
-        //the current supplied key could be stale; removing in this case, so that the cache client can get a fresh version
-        maybeDoSomeEviction();
-        return dataCache.get(key);
-    }
-
-    @Override
     public Stream<Stream<K>> lazyKeyStream() {
         return dataMap.keySet().stream().map(key->Stream.of(key));
     }
 
     @Override
-    public void put(K key, V value) {
-        put(key, value, now());
-    }
-
-    @Override
-    public void put(K key, V value, Instant lastModifiedTime) {
-        writeAccessOrderedMap().put(key, lastModifiedTime);
-        dataMap.put(key, value);
+    public void put(K key, Statistic<V> stat) {
+        writeAccessOrderedMap().put(key, stat.getLastModifiedDate().orElse(nowSource.now()));
+        dataMap.put(key, stat.getValue());
         maybeDoSomeEviction();
     }
-    @Override
-    public Option<Statistic<V>> getWrapped(K key) {
 
-        return get(key).map(value ->
+    @Override
+    public Option<Statistic<V>> get(K key) {
+
+        return getVal(key).map(value ->
                 new Statistic<V>(value,
                         writeAccessOrderedMap().get(key)));
+    }
+
+    public Option<V> getVal(K key) {
+        readAccessOrderedMap().put(key, now());
+        //the current supplied key could be stale; removing in this case, so that the cache client can get a fresh version
+        maybeDoSomeEviction();
+        return dataCache.get(key);
     }
 
     @Override

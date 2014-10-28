@@ -24,34 +24,28 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
     }
 
     @Override
-    //we use synchronized, as the simplest; I would still consider locks for ability to let interrupt
-    //read-write locks are not options because the "read" actually is also a potential write op
     public synchronized Option<V> get(K key) {
         class CacheAndCallback<K, V> extends Pair<StatAwareFuncCache<K, V>, Consumer<Statistic<V>>> {
 
             CacheAndCallback(StatAwareFuncCache<K, V> cache, Consumer<Statistic<V>> callback) {
                 super(cache, callback);
             }
-
-            public CacheAndCallback(StatAwareFuncCache<K, V> cache) {
-                this(cache, statistic -> {
-                });
-            }
-
         }
         Stream<CacheAndCallback<K, V>> cachesWithCallbackPairs =
-                Stream.of(new CacheAndCallback<K, V>(memCache),
+                Stream.of(
+                        new CacheAndCallback<K, V>(memCache, statistic -> {
+                                }),
                         new CacheAndCallback<K, V>(fsCache, statistic -> {
                             V value = statistic.getValue();
-                            Instant lastModifiedDate = statistic.getLastModifiedDate();
-                            memCache.put(key, value, lastModifiedDate);
+                            Instant lastModifiedDate = statistic.getLastModifiedDate().get();
+                            memCache.put(key, new Statistic<V>(value, lastModifiedDate));
                         }));
 
         //todo: bundle the filter on the pair's cache hit with extraction of option
         Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
                 cacheHitOptionalWithCallbackPairs
                 = cachesWithCallbackPairs
-                .map(pair -> new Pair<>(pair.getFirst().getWrapped(key), pair.getSecond()));
+                .map(pair -> new Pair<>(pair.getFirst().get(key), pair.getSecond()));
 
         Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
                 cacheHitAndCallbackPairs = cacheHitOptionalWithCallbackPairs.filter(pair -> pair.getFirst().isPresent());
@@ -70,8 +64,9 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
 
     @Override
     public synchronized void put(K key, V value) {
-        memCache.put(key, value);
-        fsCache.put(key, value);
+        //todo: optimize this, it creates new instance every time
+        memCache.toSimpleCache().put(key, value);
+        fsCache.toSimpleCache().put(key, value);
     }
 
     @Override

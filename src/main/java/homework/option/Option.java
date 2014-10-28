@@ -1,5 +1,6 @@
 package homework.option;
 
+import java.time.Instant;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -25,5 +26,9 @@ public interface Option<V> {
     }
     default boolean isPresent() {
         return !isEmpty();
+    }
+
+    default V orElse(V val) {
+        return Stream.concat(asStream(), Stream.of(val)).findFirst().get();
     }
 }

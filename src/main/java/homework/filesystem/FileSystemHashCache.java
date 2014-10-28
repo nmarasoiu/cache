@@ -74,23 +74,17 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     @Override
-    public Option<Statistic<V>> getWrapped(K key) {
+    public Option<Statistic<V>> get(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
-        return get(key)
+        return getVal(key)
                 .map(value -> new Statistic<V>(value,
                         keyRelated.findOptionalEntryDir()
                                 .map(entryPathToLastModifiedMapper())
                                 .orElse(now())));
     }
 
-    @Override
-    public void put(K key, V value, Instant lastModTime) {
-        //todo check this
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Option<V> get(K key) {
+//    @Override
+    public Option<V> getVal(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
         if (entryDirOptional.isPresent()) {
@@ -140,7 +134,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     @Override
-    public void put(K key, V value) {
+    public void put(K key, Statistic<V> value) {
         Key<K> keyRelated = new Key<>(basePath, key);
         Optional<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
 //        writeIndexer.reindex(maybeEntryDir);
@@ -156,7 +150,8 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                 write(keyPathForEntry(entryDir), keyRelated.keyBytes());
                 valuePath = valuePathForEntry(entryDir);
             }
-            writeObjectToFile(value, valuePath);
+            writeObjectToFile(value.getValue()//todo
+                    , valuePath);
         });
     }
 

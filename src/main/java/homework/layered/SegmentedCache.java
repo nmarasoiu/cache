@@ -62,15 +62,11 @@ public class SegmentedCache<K, V> implements FunctionalCache<K, V> {
         List<FunctionalCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
             //todo: fix this
-            MemoryCache<K, V> memCache = (MemoryCache<K, V>) theMemCache();
+            MemoryCache<K, V> memCache = new MemoryCache<K, V>(cacheConfig);
             FileSystemHashCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
             shards.add(new LayeredCache<>(memCache, fsCache));
         }
         return Collections.unmodifiableList(shards);
-    }
-
-    protected FunctionalCache<K,V> theMemCache() {
-        return new MemoryCache<K, V>(cacheConfig);
     }
 
     public List<FunctionalCache<K, V>> getShards() {

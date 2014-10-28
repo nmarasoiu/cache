@@ -1,5 +1,6 @@
 package homework;
 
+import homework.adaptors.FunctionalCacheOverStatAware;
 import homework.adaptors.MapBasedOnCache;
 import homework.filesystem.FileSystemHashCache;
 import org.mapdb.MapInterfaceTest;
@@ -20,8 +21,8 @@ public class MapTest extends MapInterfaceTest<String, String> {
 
     @Override
     protected Map<String, String> makeEmptyMap()  {
-        return new MapBasedOnCache<>(
-                        new FileSystemHashCache<>(createRoot()));
+        return new MapBasedOnCache<>(new FunctionalCacheOverStatAware<>(
+                        new FileSystemHashCache<>(createRoot())));
     }
 
     @Override
