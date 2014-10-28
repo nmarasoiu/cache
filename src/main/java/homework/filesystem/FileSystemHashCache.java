@@ -32,6 +32,7 @@ import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.readKeyBytes;
 import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
+import static homework.utils.StreamUtils.streamFrom;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.exists;
@@ -106,10 +107,8 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
             Stream<Path> entryDirs = hashDirs.flatMap(
                     hashDir -> uncheckIOException(() -> listDirs(hashDir)));
             return entryDirs.map(
-                    entryDir ->
-                            Stream.of(1).map(any ->
-                                    uncheckIOException(() ->
-                                            (K) fromBytes(readKeyBytes(entryDir)))));
+                    entryDir -> streamFrom(() ->
+                            (K) fromBytes(readKeyBytes(entryDir))));
         });
     }
 
