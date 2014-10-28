@@ -1,5 +1,6 @@
 package homework.option;
 
+import java.nio.file.Path;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Function;
@@ -39,6 +40,10 @@ public abstract class Option<V> {
         return new OptionWithValue<V>(val);
     }
 
+    public static <V> Option<V> of(V val) {
+        return some(val);
+    }
+
     public static <V> Option<V> from(Optional<V> optional) {
         return optional.isPresent() ? some(optional.get()) : MISSING;
     }
@@ -46,6 +51,7 @@ public abstract class Option<V> {
     public V orElse(V val) {
         return Stream.concat(asStream(), Stream.of(val)).findFirst().get();
     }
+
     private static final class OptionWithValue<V> extends Option<V> {
 
         private final V value;

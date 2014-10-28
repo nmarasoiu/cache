@@ -1,11 +1,12 @@
 package homework.filesystem;
 
+import homework.option.Option;
+
 import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Optional;
 
 import static java.nio.file.Files.*;
 
@@ -40,7 +41,7 @@ public class Indexer {
     }
 
     private void append(Path entryDir) throws IOException {
-        Optional<Path> optTail = readLink(tailLinkPath);
+        Option<Path> optTail = readLink(tailLinkPath);
         if(optTail.isPresent()){
             Path currentTail = optTail.get();
             Path rightLink = pathForSiblingLink(currentTail, SiblingDirection.RIGHT);
@@ -50,27 +51,27 @@ public class Indexer {
     }
 
     private void removeFromLinkedList(Path entryDir) throws IOException {
-        Optional<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
-        Optional<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
+        Option<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
+        Option<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
 
         writeSibling(entryDir, previousDir, SiblingDirection.RIGHT, nextDir);
         writeSibling(entryDir, nextDir, SiblingDirection.LEFT, previousDir);
     }
 
-    private Optional<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) throws IOException {
+    private Option<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) throws IOException {
         Path linkPath = pathForSiblingLink(entryDir, siblingDirection);
         return readLink(linkPath);
     }
 
-    private Optional<Path> readLink(Path linkPath) throws IOException {
+    private Option<Path> readLink(Path linkPath) throws IOException {
         if (!exists(linkPath)) {
-            return Optional.empty();
+            return Option.empty();
         }
-        return Optional.of(fs.getPath(readAllLines(linkPath).get(0)));
+        return Option.of(fs.getPath(readAllLines(linkPath).get(0)));
     }
 
 
-    private void writeSibling(Path entryDir, Optional<Path> leftSibling, SiblingDirection siblingDirection, Optional<Path> rightSibling) throws IOException {
+    private void writeSibling(Path entryDir, Option<Path> leftSibling, SiblingDirection siblingDirection, Option<Path> rightSibling) throws IOException {
         if (leftSibling.isPresent()) {
             Path linkPath = pathForSiblingLink(leftSibling.get(), siblingDirection);
             if (!rightSibling.isPresent()) {

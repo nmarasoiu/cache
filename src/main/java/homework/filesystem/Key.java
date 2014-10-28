@@ -48,7 +48,6 @@ public class Key<K> {
     public Path hashDir() {
         return hashDir.getValue().get();
     }
-//todo convert to Option<> first time a have an optional, so all api and internal methods are on Option: safe & composable
     public Option<Path> findOptionalEntryDir() {
         if (!Files.exists(hashDir())) {
             return Option.empty();
