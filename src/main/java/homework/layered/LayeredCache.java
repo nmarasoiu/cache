@@ -72,6 +72,10 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
 
     @Override
     public Stream<Stream<K>> lazyKeyStream() {
-        return fsCache.lazyKeyStream();
+        return caches.stream()
+                .flatMap(cache->cache.lazyKeyStream())
+                .flatMap(a->a)
+                .distinct()
+                .map(a->Stream.of(a));
     }
 }
