@@ -17,6 +17,7 @@ import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 /**
  * Created by dnmaras on 10/25/14.
  */
+//todo extract Entry wrapping Key
 public class Key<K> {
     //input
     private final Path basePath;
@@ -51,14 +52,14 @@ public class Key<K> {
         }
         return hashDir;
     }
-
+//todo convert to Option<> first time a have an optional, so all api and internal methods are on Option: safe & composable
     public Optional<Path> findOptionalEntryDir() {
         if (!Files.exists(hashDir())) {
             return Optional.empty();
         }
         return uncheckIOException(() -> {
             try (Stream<Path> list = Files.list(hashDir())) {
-                return list.filter(Files::isDirectory)
+                return list.filter((path) -> Files.isDirectory(path))
                         .filter(this::isThisMyKey)
                         .findFirst();
             }

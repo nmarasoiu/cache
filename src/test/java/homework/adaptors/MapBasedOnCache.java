@@ -1,7 +1,7 @@
 package homework.adaptors;
 
 import homework.Cache;
-import homework.ExtendedFuncCache;
+import homework.FunctionalCache;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -15,10 +15,10 @@ import java.util.stream.Stream;
  */
 public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V> {
     //todo: do sth with this too? these are 2 views over the same cache
-    private final ExtendedFuncCache<K, V> cache;
+    private final FunctionalCache<K, V> cache;
     private final Cache<K, V> cacheFunctional;
 
-    public MapBasedOnCache(ExtendedFuncCache<K, V> extCache) {
+    public MapBasedOnCache(FunctionalCache<K, V> extCache) {
         this.cache = (extCache);
         this.cacheFunctional = new CacheOverFunctionalCache<>(extCache);
     }
@@ -71,7 +71,11 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
                     private final Iterator<Entry<K, V>> iterator = getEntryStream().iterator();
 
                     private Stream<Entry<K, V>> getEntryStream() {
-                        return cache.keyStream();
+                        return cache.lazyKeyStream()
+                                .flatMap(a->a)
+                                .flatMap(key ->
+                                        Collections.singletonMap(key, get(key))
+                                                .entrySet().stream());
                     }
 
                     private Entry<K, V> current;
@@ -98,7 +102,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public int size() {
-                return (int) cache.keyStream().count();
+                return (int) cache.lazyKeyStream().count();
             }
         };
     }

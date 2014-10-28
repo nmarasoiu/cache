@@ -1,6 +1,5 @@
 package homework.filesystem;
 
-import homework.FunctionalCache;
 import homework.NowSource;
 import homework.StatAwareFuncCache;
 import homework.dto.Statistic;
@@ -10,8 +9,19 @@ import homework.option.OptionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
@@ -19,9 +29,19 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.keyPathForEntry;
+import static homework.filesystem.Utils.readKeyBytes;
 import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
-import static java.nio.file.Files.*;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.getLastModifiedTime;
+import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.lines;
+import static java.nio.file.Files.list;
+import static java.nio.file.Files.newInputStream;
+import static java.nio.file.Files.newOutputStream;
+import static java.nio.file.Files.write;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -36,11 +56,12 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     private Indexer writeIndexer;
     private Indexer readIndexer;
 
-    private NowSource nowSource;
+    private NowSource nowSource;//todo transform in stream<Intant>
 
-    public FileSystemHashCache(Path basePath){
+    public FileSystemHashCache(Path basePath) {
         this(basePath, Instant::now);
     }
+
     public FileSystemHashCache(Path basePath, NowSource nowSource) {
         this.nowSource = nowSource;
         this.basePath = uncheckIOException(() -> {
@@ -78,15 +99,39 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
         }
 
         return entryDirOptional
-                .map(Utils::valuePathForEntry)
+                .map((entryDir) -> Utils.valuePathForEntry(entryDir))
                         //map into Option because reading value from file can give null value
                 .map((valuePath) -> OptionFactory.some(readObjectFromFile(valuePath)))
                 .orElse(OptionFactory.missing());
     }
 
     @Override
-    public Stream<Stream<K>> keyStream() {
-        return ;
+    public Stream<Stream<K>> lazyKeyStream() {
+        return uncheckIOException(() -> {
+            Stream<Path> hashDirs = listDirs(basePath);
+            Stream<Path> entryDirs = hashDirs.flatMap(
+                    hashDir -> uncheckIOException(() -> listDirs(hashDir)));
+            return entryDirs.map(
+                    entryDir ->
+                            Stream.of(1).map(any ->
+                                    uncheckIOException(() ->
+                                            (K) fromBytes(readKeyBytes(entryDir)))));
+        });
+    }
+
+    private Stream<Path> listDirs(Path parent) {
+        return uncheckIOException (()->list(parent).filter(f->isDirectory(f)));
+    }
+
+    @Override
+    public boolean remove(K key) {
+        Key<K> keyRelated = new Key<>(basePath, key);
+        Optional<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
+        boolean exists = entryDirOpt.isPresent();
+        if (exists) {
+            uncheckIOException(() -> recursiveDelete(entryDirOpt.get()));
+        }
+        return exists;
     }
 
     private Function<Path, Instant> entryPathToLastModifiedMapper() {
@@ -149,4 +194,33 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     private Instant now() {
         return nowSource.now();
     }
+
+    private void recursiveDelete(Path directory) {
+        uncheckIOException(() ->
+                Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Files.delete(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                        Files.delete(dir);
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                }));
+    }
+
+    private Object fromBytes(byte[] bytes) {
+        return uncheckIOException(() -> {
+            try (ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
+                return in.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
 }

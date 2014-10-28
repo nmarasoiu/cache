@@ -11,6 +11,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static homework.utils.StreamUtils.reify;
+
 /**
  * Created by dnmaras on 10/17/14.
  */
@@ -61,10 +63,14 @@ public abstract class SegmentedCache<K, V, CacheType extends FunctionalCache<K, 
         return shards;
     }
 
+    @Override
+    public boolean remove(K k) {
+        return shard(k).remove(k);
+    }
 
     @Override
-    public Stream<Stream<K>> keyStream() {
-        return shards.stream()
-                .flatMap(shard -> shard.keyStream());
+    public Stream<Stream<K>> lazyKeyStream() {
+        return reify(shards.stream()
+                .flatMap(shard -> shard.lazyKeyStream()));
     }
 }

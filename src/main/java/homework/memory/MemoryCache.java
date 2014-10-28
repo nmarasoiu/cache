@@ -55,7 +55,7 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     @Override
-    public Stream<Stream<K>> keyStream() {
+    public Stream<Stream<K>> lazyKeyStream() {
         return dataMap.keySet().stream().map(key->Stream.of(key));
     }
 
@@ -78,6 +78,12 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
                         writeAccessOrderedMap().get(key)));
     }
 
+    @Override
+    public boolean remove(K key) {
+        boolean contains = dataMap.containsKey(key);
+        simpleRemove(key);
+        return contains;
+    }
     private void maybeDoSomeEviction() {
         //by stale we mean entries not "put" recently; we first eagerly evict too stale entries so that the cache client can go fetch them fresh
         Stream<K> staleEntries =

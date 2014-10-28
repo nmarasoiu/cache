@@ -104,6 +104,9 @@ public class Indexer {
     }
 
     private void persistLink(Path destination, Path value) throws IOException {
+        if(!exists(destination.getParent())){
+            System.out.println();
+        }
         Files.write(destination, Collections.singleton(value.toString()));
     }
 

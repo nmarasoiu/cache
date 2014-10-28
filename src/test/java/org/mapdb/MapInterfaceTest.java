@@ -576,38 +576,6 @@ public abstract class MapInterfaceTest<K, V> extends TestCase {
         assertInvariants(map);
     }
 
-    public void testEntrySetSetValue() {
-        final Map<K, V> map;
-        final V valueToSet;
-        map = makePopulatedMap();
-        valueToSet = getValueNotInPopulatedMap();
-
-        Set<Entry<K, V>> entrySet = map.entrySet();
-        Entry<K, V> entry = entrySet.iterator().next();
-        final V oldValue = entry.getValue();
-        final V returnedValue = entry.setValue(valueToSet);
-        assertEquals(oldValue, returnedValue);
-        Entry<K, V> me = mapEntry(entry.getKey(), valueToSet);
-        assertTrue(entrySet.contains(me));
-        assertEquals(valueToSet, map.get(entry.getKey()));
-        assertInvariants(map);
-    }
-
-    public void testEntrySetSetValueSameValue() {
-        final Map<K, V> map;
-        map = makePopulatedMap();
-
-        Set<Entry<K, V>> entrySet = map.entrySet();
-        Entry<K, V> entry = entrySet.iterator().next();
-        final V oldValue = entry.getValue();
-        final V returnedValue = entry.setValue(oldValue);
-        assertEquals(oldValue, returnedValue);
-        assertTrue(entrySet.contains(
-                mapEntry(entry.getKey(), oldValue)));
-        assertEquals(oldValue, map.get(entry.getKey()));
-        assertInvariants(map);
-    }
-
     public void testEntrySetIteratorLastHasNext() {
         final Map<K, V> map;
         map = makePopulatedMap();

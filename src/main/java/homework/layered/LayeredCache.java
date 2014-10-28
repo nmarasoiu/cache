@@ -74,4 +74,13 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
         fsCache.put(key, value);
     }
 
+    @Override
+    public synchronized boolean remove(K k) {
+        return /*memCache.remove(k) |*/ fsCache.remove(k);
+    }
+
+    @Override
+    public Stream<Stream<K>> lazyKeyStream() {
+        return fsCache.lazyKeyStream();
+    }
 }

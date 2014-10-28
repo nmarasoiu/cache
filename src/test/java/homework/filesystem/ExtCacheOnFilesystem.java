@@ -1,6 +1,6 @@
 package homework.filesystem;
 
-import homework.ExtendedFuncCache;
+import homework.FunctionalCache;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -23,12 +23,12 @@ import static homework.utils.StreamUtils.reify;
 /**
  * Created by dnmaras on 10/21/14.
  */
-public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements ExtendedFuncCache<K, V> {
+public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implements FunctionalCache<K, V> {
 
     public ExtCacheOnFilesystem(Path basePath) {
         super(basePath);
     }
-
+/*
     @Override
     public Stream<Map.Entry<K, V>> keyStream() {
         return uncheckIOException(() -> {
@@ -53,45 +53,5 @@ public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implem
                     }
                 }
         );
-    }
-
-    @Override
-    public boolean remove(K key) {
-        Key<K> keyRelated = new Key<>(basePath, key);
-        Optional<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
-        boolean exists = entryDirOpt.isPresent();
-        if (exists) {
-            uncheckIOException(() -> recursiveDelete(entryDirOpt.get()));
-        }
-        return exists;
-    }
-
-    private void recursiveDelete(Path directory) {
-        uncheckIOException(() ->
-                Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        Files.delete(file);
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                        Files.delete(dir);
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                }));
-    }
-
-    private Object fromBytes(byte[] bytes) {
-        return uncheckIOException(() -> {
-            try (ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
-                return in.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
+    }*/
 }

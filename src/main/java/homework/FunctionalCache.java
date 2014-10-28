@@ -18,7 +18,7 @@ public interface FunctionalCache<K, V> {
 
 
     boolean remove(K k);
-
-    Stream<Stream<K>> keyStream();
+//todo: convert to Stream<K> ? the only reason it is stream of stream is because filesystem has overhead in deserializing and this could help ops like size() w/o accessing key value
+    Stream<Stream<K>> lazyKeyStream();
 
 }

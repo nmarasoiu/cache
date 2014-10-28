@@ -6,6 +6,7 @@ import homework.option.Option;
 import homework.option.OptionFactory;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Created by dnmaras on 10/15/14.
@@ -24,10 +25,22 @@ public class CacheBasedOnMap<K, V> implements FunctionalCache<K, V> {
         return(val==null && !underlyingMap.containsKey(key))
                 ? OptionFactory.missing():OptionFactory.some(val);
     }
+    @Override
+    public Stream<Stream<K>> lazyKeyStream() {
+        Stream<K> keyStream = underlyingMap.keySet().stream();
+        return keyStream.map(key->Stream.of(key));
+    }
 
     @Override
     public void put(K key, V value) {
         underlyingMap.put(key, value);
+    }
+
+    @Override
+    public boolean remove(K k) {
+        boolean contains = underlyingMap.containsKey(k);
+        underlyingMap.remove(k);
+        return contains;
     }
 
 }
