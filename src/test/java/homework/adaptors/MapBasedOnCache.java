@@ -20,30 +20,30 @@ import java.util.stream.Stream;
  */
 public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V> {
     //todo: do sth with this too? these are 2 views over the same cache
-    private final FunctionalCache<K, V> cache;
-    private final Cache<K, V> cacheFunctional;
+    private final FunctionalCache<K, V> functionalCache;
+    private final Cache<K, V> simpleCache;
 
     public MapBasedOnCache(FunctionalCache<K, V> extCache) {
-        this.cache = (extCache);
-        this.cacheFunctional = new CacheOverFunctionalCache<>(extCache);
+        this.functionalCache = (extCache);
+        this.simpleCache = new CacheOverFunctionalCache<>(extCache);
     }
 
     @Override
     public V get(Object key) {
-        return cacheFunctional.get((K) key);
+        return simpleCache.get((K) key);
     }
 
     @Override
     public V put(K key, V value) {
         V old = get(key);
-        cache.put(key, value);
+        functionalCache.put(key, value);
         return old;
     }
 
     @Override
     public V remove(Object key) {
-        V old = cacheFunctional.get((K) key);
-        cache.remove((K) key);
+        V old = simpleCache.get((K) key);
+        functionalCache.remove((K) key);
         return old;
     }
 
@@ -63,9 +63,9 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
                 if (!(o instanceof Entry)) return false;
                 Entry<K, V> kvEntry = (Entry) o;
                 K key = kvEntry.getKey();
-                V v = cacheFunctional.get(key);
+                V v = simpleCache.get(key);
                 if (v == kvEntry.getValue() || (v != null && v.equals(kvEntry.getValue()))) {
-                    return cache.remove(key);
+                    return functionalCache.remove(key);
                 }
                 return false;
             }
@@ -76,7 +76,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
                     private final Iterator<Entry<K, V>> iterator = getEntryStream().iterator();
 
                     private Stream<Entry<K, V>> getEntryStream() {
-                        return cache.lazyKeyStream()
+                        return functionalCache.lazyKeyStream()
                                 .flatMap(a->a)
                                 .flatMap(key ->
                                         Collections.singletonMap(key, get(key))
@@ -87,7 +87,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
                     @Override
                     public void remove() {
-                        if (!cache.remove(current.getKey())) {
+                        if (!functionalCache.remove(current.getKey())) {
                             throw new IllegalStateException("Called remove twice ? or concurrent modification?");
                         }
                     }
@@ -107,7 +107,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public int size() {
-                return (int) cache.lazyKeyStream().count();
+                return (int) functionalCache.lazyKeyStream().count();
             }
         };
     }

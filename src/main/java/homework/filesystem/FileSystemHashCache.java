@@ -84,7 +84,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                                 .map(entryPathToLastModifiedMapper())
                                 .orElse(now())));
     }
-
+//todo
     //    @Override
     public Option<V> getVal(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
@@ -98,7 +98,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
                         //map into Option because reading value from file can give null value
                 .map((valuePath) -> OptionFactory.some(readObjectFromFile(valuePath)))
-                .orElse(OptionFactory.missing());
+                .orElse(OptionFactory.none());
     }
 
     @Override

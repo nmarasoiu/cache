@@ -23,7 +23,7 @@ public class CacheBasedOnMap<K, V> implements FunctionalCache<K, V> {
     public Option<V> get(K key) {
         V val = underlyingMap.get(key);
         return(val==null && !underlyingMap.containsKey(key))
-                ? OptionFactory.missing():OptionFactory.some(val);
+                ? OptionFactory.none():OptionFactory.some(val);
     }
     @Override
     public Stream<Stream<K>> lazyKeyStream() {

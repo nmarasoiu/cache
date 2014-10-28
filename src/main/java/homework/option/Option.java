@@ -14,6 +14,7 @@ import java.util.stream.Stream;
  * TODO: or replace with existent Optional jdk8 if we are not using this Optional in any situation where we could wrapp null.
  */
 public interface Option<V> {
+    //todo: unify this interface with OptionFactory in a single final class?
     boolean isEmpty();
 
     V get();

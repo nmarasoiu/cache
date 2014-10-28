@@ -29,7 +29,7 @@ public final class OptionFactory {
         }
     };
 
-    public static <V> Option<V> missing() {
+    public static <V> Option<V> none() {
         return MISSING;
     }
 

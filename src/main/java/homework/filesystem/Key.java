@@ -1,5 +1,7 @@
 package homework.filesystem;
 
+import homework.utils.LazyValue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
@@ -23,34 +25,28 @@ public class Key<K> {
     private final Path basePath;
     private final K key;
     //lazy computable values
-    private byte[] keyBytes;
-    private String persistentHash;
-    private Path hashDir;
+    private LazyValue<byte[]> keyBytes;
+    private LazyValue<String> persistentHash;
+    private LazyValue<Path> hashDir;
 
     public Key(Path basePath, K key) {
         this.key = key;
         this.basePath = basePath;
+        keyBytes = new LazyValue<>(()-> bytes(key));
+        persistentHash = new LazyValue<>(()-> toString(newDigester().digest(keyBytes())));
+        hashDir = new LazyValue<>(()->basePath.resolve(persistentHash()));
     }
 
     public byte[] keyBytes() {
-        if (keyBytes == null) {
-            keyBytes = bytes(key);
-        }
-        return keyBytes;
+        return keyBytes.getValue();
     }
 
     private String persistentHash() {
-        if (persistentHash == null) {
-            persistentHash = toString(newDigester().digest(keyBytes()));
-        }
-        return persistentHash;
+        return persistentHash.getValue();
     }
 
     public Path hashDir() {
-        if (hashDir == null) {
-            hashDir = basePath.resolve(persistentHash());
-        }
-        return hashDir;
+        return hashDir.getValue();
     }
 //todo convert to Option<> first time a have an optional, so all api and internal methods are on Option: safe & composable
     public Optional<Path> findOptionalEntryDir() {
