@@ -1,7 +1,7 @@
 package homework;
 
 import homework.adaptors.MapBasedOnCache;
-import homework.filesystem.ExtCacheOnFilesystem;
+import homework.filesystem.FileSystemHashCache;
 import org.mapdb.MapInterfaceTest;
 
 import java.util.Arrays;
@@ -21,7 +21,7 @@ public class MapTest extends MapInterfaceTest<String, String> {
     @Override
     protected Map<String, String> makeEmptyMap()  {
         return new MapBasedOnCache<>(
-                        new ExtCacheOnFilesystem<>(createRoot()));
+                        new FileSystemHashCache<>(createRoot()));
     }
 
     @Override

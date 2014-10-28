@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Optional;
 
-import static java.nio.file.Files.*;
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.readAllLines;
 
 /**
  * Manages 2 double linked lists, remembering the order of access, one for read and one for write.

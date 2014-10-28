@@ -19,7 +19,7 @@ public interface StatAwareFuncCache<K,V> extends FunctionalCache<K,V> {
      * This method aims toward Scala's "Map.get" which is of type K -> Option[V].
      */
     Option<Statistic<V>> getWrapped(K key);
-
+//todo: this looks like FunctionalCache<K,Statistic<V>>
     void put(K key, V value, Instant lastModTime);
 
 }

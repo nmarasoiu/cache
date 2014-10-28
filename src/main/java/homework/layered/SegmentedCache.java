@@ -3,10 +3,13 @@ package homework.layered;
 
 import homework.FunctionalCache;
 import homework.dto.CacheConfig;
+import homework.filesystem.FileSystemHashCache;
 import homework.markers.ThreadSafe;
+import homework.memory.MemoryCache;
 import homework.option.Option;
 import homework.utils.CacheConfigBuilder;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -17,10 +20,10 @@ import static homework.utils.StreamUtils.reify;
  * Created by dnmaras on 10/17/14.
  */
 @ThreadSafe(comment = "Just as thread safe as the underlying shard' caches")
-public abstract class SegmentedCache<K, V, CacheType extends FunctionalCache<K, V>> implements FunctionalCache<K, V> {
+public class SegmentedCache<K, V> implements FunctionalCache<K, V> {
     protected static final int concurrencyFactor = 16;
     protected CacheConfig cacheConfig;
-    protected List<CacheType> shards;
+    protected List<FunctionalCache<K, V>> shards;
 
     public SegmentedCache(CacheConfig cacheConfig) {
         //todo: create a copy-constructor like functionality with the builder that we cannot forget copy-ing a property here
@@ -51,15 +54,26 @@ public abstract class SegmentedCache<K, V, CacheType extends FunctionalCache<K, 
         return key == null ? 0 : (key).hashCode();
     }
 
-    protected CacheType shard(K key) {
+    protected FunctionalCache<K, V> shard(K key) {
         return getShards().get(modulo(key));
     }
 
-    abstract protected List<CacheType> createShardMaps();
+    protected List<FunctionalCache<K, V>> createShardMaps() {
+        List<FunctionalCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
+        for (int i = 0; i < concurrencyFactor; i++) {
+            //todo: fix this
+            MemoryCache<K, V> memCache = (MemoryCache<K, V>) theMemCache();
+            FileSystemHashCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
+            shards.add(new LayeredCache<>(memCache, fsCache));
+        }
+        return Collections.unmodifiableList(shards);
+    }
 
-    abstract protected CacheType theMemCache();
+    protected FunctionalCache<K,V> theMemCache() {
+        return new MemoryCache<K, V>(cacheConfig);
+    }
 
-    public List<CacheType> getShards() {
+    public List<FunctionalCache<K, V>> getShards() {
         return shards;
     }
 

@@ -1,6 +1,6 @@
 package homework;
 
-import homework.layered.RawSegmentedCache;
+import homework.layered.SegmentedCache;
 import homework.utils.CacheConfigBuilder;
 import homework.utils.TestUtils;
 import org.junit.Before;
@@ -18,7 +18,7 @@ public abstract class CacheTest<K, V> {
 
     @Before
     public void arrange() {
-        cache = new RawSegmentedCache<>(
+        cache = new SegmentedCache<>(
                 new CacheConfigBuilder()
                         .setBasePath(TestUtils.createRoot())
                 .setMaxObjects(9090)

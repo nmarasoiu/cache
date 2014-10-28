@@ -1,6 +1,5 @@
 package homework.memory;
 
-import homework.FunctionalCache;
 import homework.NowSource;
 import homework.StatAwareFuncCache;
 import homework.adaptors.CacheBasedOnMap;
