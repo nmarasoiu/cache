@@ -61,7 +61,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
         Option<Path> entryDirOption = keyRelated.findOptionalEntryDir();
         if (entryDirOption.isPresent()) {
             System.out.println(entryDirOption.get().toAbsolutePath());
-            uncheckIOException(() -> readIndexer.touch(entryDirOption.get()));
+//            uncheckIOException(() -> readIndexer.touch(entryDirOption.get()));
         }
         return entryDirOption
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))

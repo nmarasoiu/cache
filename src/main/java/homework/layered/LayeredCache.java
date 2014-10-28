@@ -7,7 +7,6 @@ import homework.markers.ThreadSafe;
 import homework.option.Option;
 import homework.utils.Pair;
 
-import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -24,7 +23,6 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
     @Override
     public synchronized Option<V> get(K key) {
         class CacheAndCallback<K, V> extends Pair<StatAwareFuncCache<K, V>, Consumer<Statistic<V>>> {
-
             CacheAndCallback(StatAwareFuncCache<K, V> cache, Consumer<Statistic<V>> callback) {
                 super(cache, callback);
             }
@@ -33,20 +31,17 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
                 Stream.of(
                         new CacheAndCallback<K, V>(memCache, statistic -> {
                         }),
-                        new CacheAndCallback<K, V>(fsCache, statistic -> {
-                            V value = statistic.getValue();
-                            Instant lastModifiedDate = statistic.getLastModifiedDate().get();
-                            memCache.put(key, new Statistic<V>(value, lastModifiedDate));
-                        }));
+                        new CacheAndCallback<K, V>(fsCache, statistic -> memCache.put(key, statistic)));
 
-        //todo: bundle the filter on the pair's cache hit with extraction of option
         Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
                 cacheHitOptionWithCallbackPairs
                 = cachesWithCallbackPairs
                 .map(pair -> new Pair<>(pair.getFirst().get(key), pair.getSecond()));
 
         Stream<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
-                cacheHitAndCallbackPairs = cacheHitOptionWithCallbackPairs.filter(pair -> pair.getFirst().isPresent());
+                cacheHitAndCallbackPairs =
+                cacheHitOptionWithCallbackPairs
+                        .filter(pair -> pair.getFirst().isPresent());
 
         Option<Pair<Option<Statistic<V>>, Consumer<Statistic<V>>>>
                 cacheHitAndCallbackIfAny = Option.from(cacheHitAndCallbackPairs.findFirst());
