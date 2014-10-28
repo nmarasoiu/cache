@@ -4,18 +4,10 @@ import homework.StatAwareFuncCache;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
-import homework.option.OptionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,22 +20,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static homework.filesystem.Utils.keyPathForEntry;
-import static homework.filesystem.Utils.readKeyBytes;
-import static homework.filesystem.Utils.valuePathForEntry;
+import static homework.filesystem.Utils.*;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static homework.utils.StreamUtils.streamFrom;
 import static homework.utils.StreamUtils.systemClock;
-import static java.nio.file.Files.createDirectories;
-import static java.nio.file.Files.delete;
-import static java.nio.file.Files.exists;
-import static java.nio.file.Files.getLastModifiedTime;
-import static java.nio.file.Files.isDirectory;
-import static java.nio.file.Files.lines;
-import static java.nio.file.Files.list;
-import static java.nio.file.Files.newInputStream;
-import static java.nio.file.Files.newOutputStream;
-import static java.nio.file.Files.write;
+import static java.nio.file.Files.*;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -78,27 +59,19 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     @Override
     public Option<Statistic<V>> get(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
-        return getVal(key)
-                .map(value -> new Statistic<V>(value,
-                        keyRelated.findOptionalEntryDir()
-                                .map(entryPathToLastModifiedMapper())
-                                .orElse(now())));
-    }
-//todo
-    //    @Override
-    public Option<V> getVal(K key) {
-        Key<K> keyRelated = new Key<K>(basePath, key);
-        Optional<Path> entryDirOptional = keyRelated.findOptionalEntryDir();
-        if (entryDirOptional.isPresent()) {
-            System.out.println(entryDirOptional.get().toAbsolutePath());
-//            uncheckIOException(() -> readIndexer.touch(entryDirOptional.get()));
+        Option<Path> entryDirOption = keyRelated.findOptionalEntryDir();
+        if (entryDirOption.isPresent()) {
+            System.out.println(entryDirOption.get().toAbsolutePath());
+            uncheckIOException(() -> readIndexer.touch(entryDirOption.get()));
         }
-
-        return entryDirOptional
+        return entryDirOption
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
-                        //map into Option because reading value from file can give null value
-                .map((valuePath) -> OptionFactory.some(readObjectFromFile(valuePath)))
-                .orElse(OptionFactory.none());
+                .map((valuePath) -> readObjectFromFile(valuePath))
+                .map(value ->
+                        new Statistic<V>(value,
+                                keyRelated.findOptionalEntryDir()
+                                        .map(entryPathToLastModifiedMapper())
+                                        .get()));
     }
 
     @Override
@@ -120,7 +93,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     @Override
     public boolean remove(K key) {
         Key<K> keyRelated = new Key<>(basePath, key);
-        Optional<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
+        Option<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
         boolean exists = entryDirOpt.isPresent();
         if (exists) {
             uncheckIOException(() -> recursiveDelete(entryDirOpt.get()));
@@ -136,7 +109,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     @Override
     public void put(K key, Statistic<V> value) {
         Key<K> keyRelated = new Key<>(basePath, key);
-        Optional<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
+        Option<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
 //        writeIndexer.reindex(maybeEntryDir);
         uncheckIOException(() -> {
             final Path valuePath;

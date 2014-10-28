@@ -5,7 +5,7 @@ import homework.StatAwareFuncCache;
 import homework.dto.Statistic;
 import homework.markers.ThreadSafe;
 import homework.option.Option;
-import homework.option.OptionFactory;
+import homework.option.Option;
 import homework.utils.Pair;
 
 import java.time.Instant;
@@ -58,7 +58,7 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
 
         //select just the cache hit if any (discard callback, unwrap)
         Optional<Statistic<V>> optionalStat = cacheHitAndCallbackIfAny.map(pair -> pair.getFirst().get());
-        Option<Statistic<V>> optionValueWithStat = OptionFactory.from(optionalStat);
+        Option<Statistic<V>> optionValueWithStat = Option.from(optionalStat);
         return optionValueWithStat.map(stat -> stat.getValue());
     }
 

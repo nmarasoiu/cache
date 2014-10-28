@@ -1,5 +1,7 @@
 package homework.option;
 
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -10,25 +12,87 @@ import java.util.stream.Stream;
  * One case clearly not covered is when the value is null, but still the value "exists".
  * This is exactly what happens with a null value in a map.
  * And Scala Map has get method returning Option[V] which is simpler and more efficient than always checking for containsKey.
- * TODO: see if it is easy to add the monad methods: map, flatMap, forEach, asSet, etc.
- * TODO: or replace with existent Optional jdk8 if we are not using this Optional in any situation where we could wrapp null.
  */
-public interface Option<V> {
-    //todo: unify this interface with OptionFactory in a single final class?
-    boolean isEmpty();
+public abstract class Option<V> {
+    public abstract V get();
 
-    V get();
+    public abstract boolean isEmpty();
 
-    <U> Option<U> map(Function<? super V, ? extends U> mapper);
-
-    default Stream<V> asStream() {
-        return (isPresent()) ? Stream.of(get()) : Stream.empty();
-    }
-    default boolean isPresent() {
+    public boolean isPresent() {
         return !isEmpty();
     }
+    public abstract <U> Option<U> flatMap(Function<? super V, Option<U>> mapper);
+    public abstract <U> Option<U> map(Function<? super V, ? extends U> mapper);
 
-    default V orElse(V val) {
+    Stream<V> asStream() {
+        return (isPresent()) ? Stream.of(get()) : Stream.empty();
+    }
+
+    public static <V> Option<V> empty() {
+        return MISSING;
+    }
+    public static <V> Option<V> none() {
+        return MISSING;
+    }
+
+    public static <V> Option<V> some(V val) {
+        return new OptionWithValue<V>(val);
+    }
+
+    public static <V> Option<V> from(Optional<V> optional) {
+        return optional.isPresent() ? some(optional.get()) : MISSING;
+    }
+
+    public V orElse(V val) {
         return Stream.concat(asStream(), Stream.of(val)).findFirst().get();
     }
+    private static final class OptionWithValue<V> extends Option<V> {
+
+        private final V value;
+
+        public OptionWithValue(V value) {
+            this.value = value;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public V get() {
+            return value;
+        }
+        @Override
+        public <U> Option<U> map(Function<? super V, ? extends U> mapper) {
+            return new OptionWithValue<>(mapper.apply(value));
+        }
+        @Override
+        public <U> Option<U> flatMap(Function<? super V, Option<U>> mapper) {
+            return mapper.apply(value);
+        }
+
+    }
+
+    private static final Option MISSING = new Option() {
+        @Override
+        public boolean isEmpty() {
+            return true;
+        }
+
+        @Override
+        public Option flatMap(Function mapper) {
+            return MISSING;
+        }
+
+        @Override
+        public Option map(Function mapper) {
+            return MISSING;
+        }
+
+        @Override
+        public Object get() {
+            throw new NoSuchElementException();
+        }
+    };
 }

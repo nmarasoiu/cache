@@ -1,5 +1,6 @@
 package homework.filesystem;
 
+import homework.option.Option;
 import homework.utils.LazyValue;
 
 import java.io.ByteArrayOutputStream;
@@ -38,26 +39,26 @@ public class Key<K> {
     }
 
     public byte[] keyBytes() {
-        return keyBytes.getValue();
+        return keyBytes.getValue().get();
     }
 
     private String persistentHash() {
-        return persistentHash.getValue();
+        return persistentHash.getValue().get();
     }
 
     public Path hashDir() {
-        return hashDir.getValue();
+        return hashDir.getValue().get();
     }
 //todo convert to Option<> first time a have an optional, so all api and internal methods are on Option: safe & composable
-    public Optional<Path> findOptionalEntryDir() {
+    public Option<Path> findOptionalEntryDir() {
         if (!Files.exists(hashDir())) {
-            return Optional.empty();
+            return Option.empty();
         }
         return uncheckIOException(() -> {
             try (Stream<Path> list = Files.list(hashDir())) {
-                return list.filter((path) -> Files.isDirectory(path))
+                return Option.from(list.filter((path) -> Files.isDirectory(path))
                         .filter(this::isThisMyKey)
-                        .findFirst();
+                        .findFirst());
             }
         });
     }

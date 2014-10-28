@@ -3,7 +3,7 @@ package homework.adaptors;
 import homework.FunctionalCache;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
-import homework.option.OptionFactory;
+import homework.option.Option;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -23,7 +23,7 @@ public class CacheBasedOnMap<K, V> implements FunctionalCache<K, V> {
     public Option<V> get(K key) {
         V val = underlyingMap.get(key);
         return(val==null && !underlyingMap.containsKey(key))
-                ? OptionFactory.none():OptionFactory.some(val);
+                ? Option.none():Option.some(val);
     }
     @Override
     public Stream<Stream<K>> lazyKeyStream() {

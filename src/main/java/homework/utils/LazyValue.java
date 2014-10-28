@@ -4,24 +4,31 @@ import homework.option.Option;
 
 import java.util.function.Supplier;
 
-import static homework.option.OptionFactory.none;
-import static homework.option.OptionFactory.some;
+import static homework.option.Option.none;
+import static homework.option.Option.some;
 
 /**
  * Created by nmarasoiu on 10/28/2014.
  */
 public class LazyValue<V> {
-    private final Supplier<V> supplier;
-    private Option<V> val = none();//I want to cover value==null case
+    //I want to cover the scenario when the client can emitter of the lazy value can delegate to its consumer the supplier of the value, if any
+    private final Option<Supplier<V>> supplierOption;
 
-    public LazyValue(Supplier<V> supplier) {
-        this.supplier = supplier;
+    //I want to cover value==null case
+    private Option<V> valueOption = none();
+
+    public LazyValue(Supplier<V> supplierOption) {
+        this.supplierOption = some(supplierOption);
+    }
+//this is the constructor used when the lazy value should not be accessed (NoSuchElement will arise)
+    public LazyValue() {
+        this.supplierOption = none();
     }
 
-    public V getValue() {
-        if (val.isEmpty()) {
-            val = some(supplier.get());
+    public Option<V> getValue() {
+        if (valueOption.isEmpty()) {
+            valueOption = supplierOption.map(supplier->supplier.get());
         }
-        return val.get();
+        return valueOption;
     }
 }
