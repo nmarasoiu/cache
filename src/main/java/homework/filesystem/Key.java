@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.readKeyBytes;
+import static homework.option.Option.some;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 
 /**
@@ -32,9 +33,9 @@ public class Key<K> {
     public Key(Path basePath, K key) {
         this.key = key;
         this.basePath = basePath;
-        keyBytes = new LazyValue<>(()-> bytes(key));
-        persistentHash = new LazyValue<>(()-> toString(newDigester().digest(keyBytes())));
-        hashDir = new LazyValue<>(()->basePath.resolve(persistentHash()));
+        keyBytes = new LazyValue<>(()-> some(bytes(key)));
+        persistentHash = new LazyValue<>(()-> some(toString(newDigester().digest(keyBytes()))));
+        hashDir = new LazyValue<>(()->some(basePath.resolve(persistentHash())));
     }
 
     public byte[] keyBytes() {

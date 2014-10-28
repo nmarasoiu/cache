@@ -7,6 +7,8 @@ import homework.utils.LazyValue;
 import java.time.Instant;
 import java.util.function.Supplier;
 
+import static homework.option.Option.some;
+
 /**
  * Created by dnmaras on 10/25/14.
  */
@@ -24,7 +26,7 @@ public final class Statistic<V> {
 
     private Statistic(V value, Supplier<Instant> lastModSupplier) {
         this.value = value;
-        this.lastModifiedDate = new LazyValue<>(lastModSupplier);
+        this.lastModifiedDate = new LazyValue<>(()->some(lastModSupplier.get()));
     }
 
     public Statistic(V value, LazyValue<Instant> lastModifiedDate) {

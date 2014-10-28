@@ -12,22 +12,22 @@ import static homework.option.Option.some;
  */
 public class LazyValue<V> {
     //I want to cover the scenario when the client can emitter of the lazy value can delegate to its consumer the supplier of the value, if any
-    private final Option<Supplier<V>> supplierOption;
+    private final Option<Supplier<Option<V>>> supplierOption;
 
     //I want to cover value==null case
     private Option<V> valueOption = none();
 
-    public LazyValue(Supplier<V> supplierOption) {
+    public LazyValue(Supplier<Option<V>> supplierOption) {
         this.supplierOption = some(supplierOption);
     }
-//this is the constructor used when the lazy value should not be accessed (NoSuchElement will arise)
+
     public LazyValue() {
-        this.supplierOption = none();
+        this(() -> none());
     }
 
     public Option<V> getValue() {
         if (valueOption.isEmpty()) {
-            valueOption = supplierOption.map(supplier->supplier.get());
+            valueOption = supplierOption.flatMap(supplier -> supplier.get());
         }
         return valueOption;
     }

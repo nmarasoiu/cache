@@ -23,20 +23,31 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
 
     @Override
     public synchronized Option<V> get(K key) {
-        Option<CacheAndCallback<K, V>> cacheHitAndCallbackIfAny = Option.from(
+        class CacheAndCallback extends Pair<StatAwareFuncCache<K, V>, Consumer<Statistic<V>>> {
+            LazyValue<Statistic<V>> cachedValueIfAny = new LazyValue<>(() -> getFirst().get(key));
+
+            CacheAndCallback(StatAwareFuncCache<K, V> cache, Consumer<Statistic<V>> callback) {
+                super(cache, callback);
+            }
+
+            public Option<Statistic<V>> getCachedValue() {
+                return cachedValueIfAny.getValue();
+            }
+        }
+        Option<CacheAndCallback> cacheHitAndCallbackIfAny = Option.from(
                 Stream.of(
-                        new CacheAndCallback<>(memCache, statistic -> {
+                        new CacheAndCallback(memCache, statistic -> {
                         }),
-                        new CacheAndCallback<>(fsCache, statistic -> memCache.put(key, statistic))
+                        new CacheAndCallback(fsCache, statistic -> memCache.put(key, statistic))
                 )
-                        .filter(pair -> pair.getFirst().get(key).isPresent())
+                        .filter(pair -> pair.getCachedValue().isPresent())
                         .findFirst());
 
         //execute callback if any
-        cacheHitAndCallbackIfAny.ifPresent(pair -> pair.getSecond().accept(pair.getFirst().get(key).get()));
+        cacheHitAndCallbackIfAny.ifPresent(pair -> pair.getSecond().accept(pair.getCachedValue().get()));
 
         //select just the cache hit if any (discard callback, unwrap)
-        return cacheHitAndCallbackIfAny.map(pair -> pair.getFirst().get(key).get()).map(stat -> stat.getValue());
+        return cacheHitAndCallbackIfAny.map(pair -> pair.getCachedValue().get()).map(stat -> stat.getValue());
     }
 
 
@@ -55,11 +66,5 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
     @Override
     public Stream<Stream<K>> lazyKeyStream() {
         return fsCache.lazyKeyStream();
-    }
-}
-
-class CacheAndCallback<K, V> extends Pair<StatAwareFuncCache<K, V>, Consumer<Statistic<V>>> {
-    CacheAndCallback(StatAwareFuncCache<K, V> cache, Consumer<Statistic<V>> callback) {
-        super(cache, callback);
     }
 }
