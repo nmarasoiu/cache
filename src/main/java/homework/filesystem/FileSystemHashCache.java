@@ -16,7 +16,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
 

@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.readKeyBytes;
