@@ -16,7 +16,7 @@ public class ExtMemoryCache<K, V> extends MemoryCache<K, V> implements ExtendedF
     }
 
     @Override
-    public Stream<Map.Entry<K, V>> entryStream() {
+    public Stream<Map.Entry<K, V>> keyStream() {
         return dataMap.entrySet().stream();
     }
 

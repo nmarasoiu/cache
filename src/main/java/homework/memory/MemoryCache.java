@@ -55,6 +55,11 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     @Override
+    public Stream<Stream<K>> keyStream() {
+        return dataMap.keySet().stream().map(key->Stream.of(key));
+    }
+
+    @Override
     public void put(K key, V value) {
         put(key, value, now());
     }

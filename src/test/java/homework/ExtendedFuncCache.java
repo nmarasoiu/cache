@@ -8,8 +8,4 @@ import java.util.stream.Stream;
  */
 public interface ExtendedFuncCache<K, V> extends FunctionalCache<K, V> {
 
-    boolean remove(K k);
-
-    Stream<Map.Entry<K, V>> entryStream();
-
 }

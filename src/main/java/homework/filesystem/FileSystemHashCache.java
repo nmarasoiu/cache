@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.valuePathForEntry;
@@ -64,6 +65,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     @Override
     public void put(K key, V value, Instant lastModTime) {
         //todo check this
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -80,6 +82,11 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                         //map into Option because reading value from file can give null value
                 .map((valuePath) -> OptionFactory.some(readObjectFromFile(valuePath)))
                 .orElse(OptionFactory.missing());
+    }
+
+    @Override
+    public Stream<Stream<K>> keyStream() {
+        return ;
     }
 
     private Function<Path, Instant> entryPathToLastModifiedMapper() {

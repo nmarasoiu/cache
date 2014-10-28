@@ -30,7 +30,7 @@ public class ExtCacheOnFilesystem<K, V> extends FileSystemHashCache<K, V> implem
     }
 
     @Override
-    public Stream<Map.Entry<K, V>> entryStream() {
+    public Stream<Map.Entry<K, V>> keyStream() {
         return uncheckIOException(() -> {
                     try (Stream<Path> pathsStream = Files.walk(basePath)) {
                         return reify(pathsStream

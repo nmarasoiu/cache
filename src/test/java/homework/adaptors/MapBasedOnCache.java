@@ -71,7 +71,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
                     private final Iterator<Entry<K, V>> iterator = getEntryStream().iterator();
 
                     private Stream<Entry<K, V>> getEntryStream() {
-                        return cache.entryStream();
+                        return cache.keyStream();
                     }
 
                     private Entry<K, V> current;
@@ -98,7 +98,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public int size() {
-                return (int) cache.entryStream().count();
+                return (int) cache.keyStream().count();
             }
         };
     }

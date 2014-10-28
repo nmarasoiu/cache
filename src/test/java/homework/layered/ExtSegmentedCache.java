@@ -41,9 +41,9 @@ public class ExtSegmentedCache<K, V> extends SegmentedCache<K, V, FunctionalCach
     }
 
     @Override
-    public Stream<Map.Entry<K, V>> entryStream() {
+    public Stream<Map.Entry<K, V>> keyStream() {
         Stream<Map.Entry<K, V>> entryStream = getShards().stream()
-                .flatMap(a -> ((ExtendedFuncCache) a).entryStream());//todo
+                .flatMap(a -> ((ExtendedFuncCache) a).keyStream());//todo
         return reify(entryStream);
     }
 

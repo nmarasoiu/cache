@@ -17,9 +17,9 @@ public class ExtLayeredCache<K, V> extends LayeredCache<K, V> implements Extende
     }
 
     @Override
-    public synchronized Stream<Map.Entry<K, V>> entryStream() {
+    public synchronized Stream<Map.Entry<K, V>> keyStream() {
         //todo: fix this
-        return getFsCache().entryStream();
+        return getFsCache().keyStream();
     }
 
     private ExtendedFuncCache getFsCache() {
