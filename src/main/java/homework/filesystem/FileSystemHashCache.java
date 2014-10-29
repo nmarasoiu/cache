@@ -92,6 +92,17 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     }
 
     @Override
+    public boolean remove(K key) {
+        Key<K> keyRelated = new Key<>(basePath, key);
+        Option<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
+        boolean exists = entryDirOpt.isPresent();
+        if (exists) {
+            uncheckIOException(() -> recursiveDelete(entryDirOpt.get()));
+        }
+        return exists;
+    }
+
+    @Override
     public Stream<Stream<K>> lazyKeyStream() {
         return uncheckIOException(() -> {
             Stream<Path> hashDirs = listDirs(basePath);
@@ -101,21 +112,6 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                     entryDir -> streamFrom(() ->
                             (K) fromBytes(readKeyBytes(entryDir))));
         });
-    }
-
-    private Stream<Path> listDirs(Path parent) {
-        return uncheckIOException(() -> list(parent).filter(f -> isDirectory(f)));
-    }
-
-    @Override
-    public boolean remove(K key) {
-        Key<K> keyRelated = new Key<>(basePath, key);
-        Option<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
-        boolean exists = entryDirOpt.isPresent();
-        if (exists) {
-            uncheckIOException(() -> recursiveDelete(entryDirOpt.get()));
-        }
-        return exists;
     }
 
     private Function<Path, Instant> entryPathToLastModifiedMapper() {
@@ -198,6 +194,10 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private Stream<Path> listDirs(Path parent) {
+        return uncheckIOException(() -> list(parent).filter(f -> isDirectory(f)));
     }
 
 }
