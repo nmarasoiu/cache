@@ -1,8 +1,7 @@
 package homework.adaptors;
 
 import homework.FCache;
-import homework.StatFCache;
-import homework.dto.Statistic;
+import homework.dto.Stat;
 import homework.option.Option;
 
 import java.util.stream.Stream;
@@ -11,15 +10,15 @@ import java.util.stream.Stream;
  * Created by nmarasoiu on 10/28/2014.
  */
 public class FCacheOverStatAware<K,V> implements FCache<K,V> {
-    private final StatFCache<K,V> underlying;
+    private final FCache<K, Stat<V>> underlying;
 
-    public FCacheOverStatAware(StatFCache<K, V> underlying) {
+    public FCacheOverStatAware(FCache<K, Stat<V>> underlying) {
         this.underlying = underlying;
     }
 
     @Override
     public void put(K key, V value) {
-        underlying.put(key, new Statistic<V>(value));
+        underlying.put(key, new Stat<V>(value));
     }
 
     @Override

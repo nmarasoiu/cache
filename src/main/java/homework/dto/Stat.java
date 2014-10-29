@@ -12,20 +12,20 @@ import static homework.option.Option.some;
 /**
  * Created by dnmaras on 10/25/14.
  */
-public final class Statistic<V> {
+public final class Stat<V> {
     private final V value;
     private final LazyValue<Instant> lastModifiedDate;
 
-    public Statistic(V value) {
+    public Stat(V value) {
         this(value, new LazyValue<>());
     }
 
-    public Statistic(V value, Supplier<Instant> lastModSupplier) {
+    public Stat(V value, Supplier<Instant> lastModSupplier) {
         this.value = value;
         this.lastModifiedDate = new LazyValue<>(()->some(lastModSupplier.get()));
     }
 
-    public Statistic(V value, LazyValue<Instant> lastModifiedDate) {
+    public Stat(V value, LazyValue<Instant> lastModifiedDate) {
         this.value = value;
         this.lastModifiedDate = lastModifiedDate;
     }

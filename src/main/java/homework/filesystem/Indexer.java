@@ -6,9 +6,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.util.Collections;
 
-import static homework.adaptors.IOUncheckingFiles.deleteIfExists;
-import static homework.adaptors.IOUncheckingFiles.readAllLines;
-import static homework.adaptors.IOUncheckingFiles.write;
+import static homework.adaptors.IOUncheckingFiles.*;
 import static java.nio.file.Files.exists;
 
 /**
@@ -72,17 +70,16 @@ public class Indexer {
     }
 
 
-    private void writeSibling(Path entryDir, Option<Path> leftSiblingOption, SiblingDirection siblingDirection, Option<Path> rightSiblingOption) {
+    private void writeSibling(Path entryDir,
+                              Option<Path> leftSiblingOption,
+                              SiblingDirection siblingDirection,
+                              Option<Path> rightSiblingOption) {
         leftSiblingOption.ifPresent(leftSibling -> {
-            Path linkPath =
-                    pathForSiblingLink(leftSibling, siblingDirection);
+            Path linkPath = pathForSiblingLink(leftSibling, siblingDirection);
             rightSiblingOption
                     .ifPresent(rightSibling ->
                             persistLink(linkPath, rightSibling))
-                    .orElse(() -> {
-                        if (exists(linkPath))
-                            deleteIfExists(linkPath);
-                    });
+                    .orElse(() -> deleteIfExists(linkPath));
         }).orElse(() -> {
             if (siblingDirection == SiblingDirection.RIGHT) {
                 setHead(entryDir);

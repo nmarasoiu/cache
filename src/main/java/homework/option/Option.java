@@ -13,9 +13,6 @@ import java.util.stream.Stream;
  * One case clearly not covered is when the value is null, but still the value "exists".
  * This is exactly what happens with a null value in a map.
  * And Scala Map has get method returning Option[V] which is simpler and more efficient than always checking for containsKey.
- * TODO: facade filesystem work so that:
- * 1. IOException is wrpped into unchecked
- * 2. the Optional returning methods return Option
  */
 public abstract class Option<V> {
     public abstract V get();

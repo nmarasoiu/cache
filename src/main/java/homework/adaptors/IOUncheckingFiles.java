@@ -1,20 +1,7 @@
 package homework.adaptors;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.FileVisitor;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
+import java.io.*;
+import java.nio.file.*;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
@@ -94,15 +81,15 @@ public final class IOUncheckingFiles {
         V call() throws IOException;
     }
 
-    public static Path createTempDirectory(Path dir,
-                                           String prefix,
-                                           FileAttribute<?>... attrs) {
-        return uncheckIOException(() -> Files.createTempDirectory(dir, prefix, attrs));
-    }
     public static Path createTempDirectory(String prefix,
                                            FileAttribute<?>... attrs)
     {
         return uncheckIOException(() -> Files.createTempDirectory(prefix,attrs));
+    }
+    public static Path createTempDirectory(Path dir,
+                                           String prefix,
+                                           FileAttribute<?>... attrs) {
+        return uncheckIOException(() -> Files.createTempDirectory(dir, prefix, attrs));
     }
 
     public static <T> byte[] bytes(T object) {

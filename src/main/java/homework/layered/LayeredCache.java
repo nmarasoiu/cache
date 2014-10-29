@@ -1,8 +1,7 @@
 package homework.layered;
 
 import homework.FCache;
-import homework.StatFCache;
-import homework.dto.Statistic;
+import homework.dto.Stat;
 import homework.markers.ThreadSafe;
 import homework.option.Option;
 import homework.utils.LazyValue;
@@ -17,29 +16,42 @@ import static homework.utils.StreamUtils.rangeStream;
 import static homework.utils.StreamUtils.toList;
 
 @ThreadSafe
-public class LayeredCache<K, V> implements StatFCache<K, V> {
-    protected final List<StatFCache<K, V>> caches;
-    private final List<Pair<StatFCache<K, V>, List<StatFCache<K, V>>>> cacheWithUpperCaches;
+public class LayeredCache<K, V> implements FCache<K, Stat<V>> {
+    protected final List<FCache<K, Stat<V>>> caches;
+    private final List<Pair<FCache<K, Stat<V>>, List<FCache<K, Stat<V>>>>> cacheWithUpperCaches;
 
-    public LayeredCache(List<StatFCache<K, V>> caches) {
+    public LayeredCache(List<FCache<K, Stat<V>>> caches) {
         this.caches = new ArrayList<>(caches);
         cacheWithUpperCaches = createCacheWithUpperCaches();
     }
 
+    /**
+     * Gets the value bundled with its last refresh timestamp.
+     * The refresh timestamp == the time when it was last put.
+     * <p/>
+     * But the big advantage of this method's signature returning Option,
+     * is that we are sure that if the returned value is != null,
+     * then the entry exists in the Map (the entry mapping the key to null value).
+     * So we circumvent the need for a containsKey method, with the efficiency advantage at least potential.
+     * This method aims toward Scala's "Map.get" which is of type K -> Option[V].
+     *
+     * Iterates the caches from upper to lower and for the first cache hit if any, gets the value and its stats like last mod time,
+     * and before returning that result, it updates all the upper caches with that value with statistic.
+     */
     @Override
-    public synchronized Option<Statistic<V>> get(K key) {
-        class CacheAndCallback extends Pair<StatFCache<K, V>, Consumer<Statistic<V>>> {
-            LazyValue<Statistic<V>> cachedValueIfAny = new LazyValue<>(() -> getFirst().get(key));
+    public synchronized Option<Stat<V>> get(K key) {
+        class CacheAndCallback extends Pair<FCache<K, Stat<V>>, Consumer<Stat<V>>> {
+            LazyValue<Stat<V>> cachedValueIfAny = new LazyValue<>(() -> getFirst().get(key));
 
-            CacheAndCallback(StatFCache<K, V> cache, Consumer<Statistic<V>> callback) {
+            CacheAndCallback(FCache<K, Stat<V>> cache, Consumer<Stat<V>> callback) {
                 super(cache, callback);
             }
 
-            Option<Statistic<V>> getCachedValueWithStatisticIfAny() {
+            Option<Stat<V>> getCachedValueWithStatisticIfAny() {
                 return cachedValueIfAny.getOption();
             }
 
-            Statistic<V> getCachedValueWithStatistic() {
+            Stat<V> getCachedValueWithStatistic() {
                 return getCachedValueWithStatisticIfAny().get();
             }
         }
@@ -62,7 +74,7 @@ public class LayeredCache<K, V> implements StatFCache<K, V> {
     }
 
     @Override
-    public synchronized void put(K key, Statistic<V> value) {
+    public synchronized void put(K key, Stat<V> value) {
         caches.forEach(cache -> cache.put(key, value));
     }
 
@@ -83,7 +95,7 @@ public class LayeredCache<K, V> implements StatFCache<K, V> {
                 .map(key -> Stream.of(key));//wrap back to Stream<Stream>
     }
 
-    private List<Pair<StatFCache<K, V>, List<StatFCache<K, V>>>> createCacheWithUpperCaches() {
+    private List<Pair<FCache<K, Stat<V>>, List<FCache<K, Stat<V>>>>> createCacheWithUpperCaches() {
         return toList(rangeStream(0, caches.size())
                 .map(cacheIdx -> new Pair<>(caches.get(cacheIdx), caches.subList(0, cacheIdx))));
     }

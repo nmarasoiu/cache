@@ -1,9 +1,9 @@
 package homework.memory;
 
-import homework.StatFCache;
+import homework.FCache;
 import homework.adaptors.CacheBasedOnMap;
 import homework.dto.CacheConfig;
-import homework.dto.Statistic;
+import homework.dto.Stat;
 import homework.filesystem.IndexType;
 import homework.option.Option;
 import homework.utils.StreamUtils;
@@ -24,7 +24,7 @@ import static homework.utils.StreamUtils.systemClock;
  * <p/>
  * The elements to evict for condition 2 are the ones with oldest read/write-time.
  */
-public class MemoryCache<K, V> implements StatFCache<K, V> {
+public class MemoryCache<K, V> implements FCache<K, Stat<V>> {
     protected final CacheConfig cacheConfig;
     private final CacheBasedOnMap<K, V> dataCache;//todo create an interface for Cache+size
     protected final Map<IndexType, Map<K, Instant>> accessOrderedMap;
@@ -45,7 +45,7 @@ public class MemoryCache<K, V> implements StatFCache<K, V> {
     }
 
     @Override
-    public void put(K key, Statistic<V> stat) {
+    public void put(K key, Stat<V> stat) {
         //to do - is this the right place to inject now? i guess so, because unless it comes with a timestamp from filesystem using the explicit Statistic constructor, it means it is a normal value put, and that is a fresh one
         Instant lastModTimestamp = stat.getLastModifiedDate().orElse(() -> nowSource.next());
         writeAccessOrderedMap().put(key, lastModTimestamp);
@@ -54,10 +54,10 @@ public class MemoryCache<K, V> implements StatFCache<K, V> {
     }
 
     @Override
-    public Option<Statistic<V>> get(K key) {
+    public Option<Stat<V>> get(K key) {
 
         return getVal(key).map(value ->
-                new Statistic<V>(value,
+                new Stat<V>(value,
                         ()->writeAccessOrderedMap().get(key)));
     }
 

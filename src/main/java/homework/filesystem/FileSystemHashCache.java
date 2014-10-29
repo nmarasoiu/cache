@@ -1,7 +1,7 @@
 package homework.filesystem;
 
-import homework.StatFCache;
-import homework.dto.Statistic;
+import homework.FCache;
+import homework.dto.Stat;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
 import org.slf4j.Logger;
@@ -30,7 +30,7 @@ import static java.nio.file.Files.isDirectory;
  * If the filesystem has not-nice limitations in directory entries, pls use ZipFileSystem (hope that is zip64)
  */
 @NonThreadSafe
-public class FileSystemHashCache<K, V> implements StatFCache<K, V> {
+public class FileSystemHashCache<K, V> implements FCache<K, Stat<V>> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemHashCache.class);
 
@@ -54,7 +54,7 @@ public class FileSystemHashCache<K, V> implements StatFCache<K, V> {
     }
 
     @Override
-    public Option<Statistic<V>> get(K key) {
+    public Option<Stat<V>> get(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Option<Path> entryDirOption = keyRelated.findOptionalEntryDir();
         entryDirOption.ifPresent((entryDir) -> {
@@ -65,14 +65,14 @@ public class FileSystemHashCache<K, V> implements StatFCache<K, V> {
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
                 .map((valuePath) -> (V) readObjectFromFile(valuePath))
                 .map(value ->
-                        new Statistic<V>(value,
+                        new Stat<V>(value,
                                 () -> entryDirOption
                                         .map(entryPathToLastModifiedMapper())
                                         .get()));
     }
 
     @Override
-    public void put(K key, Statistic<V> value) {
+    public void put(K key, Stat<V> value) {
         Key<K> keyRelated = new Key<>(basePath, key);
         Path entryDir = keyRelated.findOptionalEntryDir()
                 .orElse(() -> {

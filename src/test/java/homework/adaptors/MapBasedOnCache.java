@@ -3,12 +3,7 @@ package homework.adaptors;
 import homework.Cache;
 import homework.FCache;
 
-import java.util.AbstractMap;
-import java.util.AbstractSet;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**

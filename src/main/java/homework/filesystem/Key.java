@@ -3,9 +3,6 @@ package homework.filesystem;
 import homework.option.Option;
 import homework.utils.LazyValue;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -13,10 +10,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import static homework.adaptors.IOUncheckingFiles.bytes;
+import static homework.adaptors.IOUncheckingFiles.list;
 import static homework.filesystem.Utils.readKeyBytes;
 import static homework.option.Option.some;
-import static homework.adaptors.IOUncheckingFiles.*;
-import static homework.adaptors.IOUncheckingFiles.bytes;
 
 /**
  * Created by dnmaras on 10/25/14.
