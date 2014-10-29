@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 /**
  * Created by dnmaras on 10/18/14.
- * Incomplete, incorrect!
+ * Incomplete, not refactored - just for testing.
  * The sole purpose, to plug this Map into a test machinery.
  * Both google guava and mapdb have comprehensive Map tests.
  * This way we can test the Cache functionality pretty deep.
@@ -102,7 +102,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public int size() {
-                return (int) fCache.size();
+                return (int) fCache.keyStream().count();
             }
         };
     }

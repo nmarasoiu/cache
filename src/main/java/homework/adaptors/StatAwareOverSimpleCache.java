@@ -27,8 +27,8 @@ public class StatAwareOverSimpleCache<K,V> implements FCache<K,Stat<V>> {
     }
 
     @Override
-    public boolean remove(K k) {
-        return underlying.remove(k);
+    public boolean remove(K key) {
+        return underlying.remove(key);
     }
 
     @Override

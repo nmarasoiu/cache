@@ -35,9 +35,9 @@ public class CacheBasedOnMap<K, V> implements FCache<K, V> {
     }
 
     @Override
-    public boolean remove(K k) {
-        boolean contains = underlyingMap.containsKey(k);
-        underlyingMap.remove(k);
+    public boolean remove(K key) {
+        boolean contains = underlyingMap.containsKey(key);
+        underlyingMap.remove(key);
         return contains;
     }
 

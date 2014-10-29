@@ -27,8 +27,8 @@ public class FCacheOverStatAware<K,V> implements FCache<K,V> {
     }
 
     @Override
-    public boolean remove(K k) {
-        return underlying.remove(k);
+    public boolean remove(K key) {
+        return underlying.remove(key);
     }
 
     @Override

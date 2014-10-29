@@ -13,11 +13,9 @@ package homework;
 
  eviction in memory si daca e de replicat coada pe filesystem fie implicit fie explicit
  */
-public interface Cache<K, V> {
+public interface Cache<K, V> extends CommonCache<K,V>{
     V get(K key);
 
     boolean containsKey(K key);
-
-    void put(K key, V value);
 
 }

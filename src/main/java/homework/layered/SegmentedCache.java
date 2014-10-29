@@ -79,8 +79,8 @@ public class SegmentedCache<K, V> implements FCache<K, V> {
     }
 
     @Override
-    public boolean remove(K k) {
-        return shard(k).remove(k);
+    public boolean remove(K key) {
+        return shard(key).remove(key);
     }
 
     @Override
