@@ -9,8 +9,8 @@ import homework.utils.LazyValue;
 import homework.utils.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -19,15 +19,9 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
     protected final List<Cache> caches;
     private final List<Pair<Cache, List<Cache>>> cacheWithUpperCaches;
 
-    public LayeredCache(Cache... caches) {
-        this.caches = Arrays.asList(caches);
+    public LayeredCache(List<Cache> caches) {
+        this.caches = new ArrayList<>(caches);
         cacheWithUpperCaches = createCacheWithUpperCaches();
-    }
-
-    private ArrayList<Pair<Cache, List<Cache>>> createCacheWithUpperCaches() {
-        ArrayList<Pair<Cache, List<Cache>>> pairs = new ArrayList<>();
-        new CacheAndCallback(cache, )
-        return pairs;
     }
 
     @Override
@@ -49,11 +43,12 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
         }
         Option<CacheAndCallback> cacheHitAndCallbackIfAny =
                 Option.from(
-                        cacheWithUpperCaches.stream().map(cacheWithUpperCaches ->)
-
-                        Stream.of(
-                                new CacheAndCallback(memCache, statistic -> {
-                                }), new CacheAndCallback(fsCache, statistic -> memCache.put(key, statistic)))
+                        cacheWithUpperCaches.stream()
+                                .map(cacheWithUpperCaches ->
+                                        new CacheAndCallback(cacheWithUpperCaches.getFirst(),
+                                                statistic ->
+                                                        cacheWithUpperCaches.getSecond().stream()
+                                                                .forEach(cache->cache.put(key, statistic))))
                                 .filter(pair -> pair.getCachedValueWithStatisticIfAny().isPresent())
                                 .findFirst());
 
@@ -64,11 +59,11 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
         return cacheHitAndCallbackIfAny.map(pair -> pair.getCachedValueWithStatistic().getValue());
     }
 
-
     @Override
     public synchronized void put(K key, V value) {
         caches.forEach(cache -> cache.toSimpleCache().put(key, value));
     }
+
 
     @Override
     public synchronized boolean remove(K key) {
@@ -84,5 +79,16 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
                 .flatMap(keyStream -> keyStream)//flatten:Stream<Stream<K>>->Stream<K>
                 .distinct()//deduplicate keys from the caches
                 .map(key -> Stream.of(key));//wrap back to Stream<Stream>
+    }
+
+    private List<Pair<Cache, List<Cache>>> createCacheWithUpperCaches() {
+        List<Pair<Cache, List<Cache>>> pairs = new ArrayList<>();
+        for (ListIterator<Cache> iterator = caches.listIterator(); iterator.hasNext(); ) {
+            int currentIndex = iterator.nextIndex();
+            Cache currentCache = caches.get(currentIndex);
+            List<Cache> previousCaches = caches.subList(0, currentIndex);
+            pairs.add(new Pair<>(currentCache, previousCaches));
+        }
+        return pairs;
     }
 }

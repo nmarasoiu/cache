@@ -2,6 +2,7 @@ package homework.layered;
 
 
 import homework.FunctionalCache;
+import homework.StatAwareFuncCache;
 import homework.dto.CacheConfig;
 import homework.filesystem.FileSystemHashCache;
 import homework.markers.ThreadSafe;
@@ -10,6 +11,7 @@ import homework.option.Option;
 import homework.utils.CacheConfigBuilder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -61,10 +63,9 @@ public class SegmentedCache<K, V> implements FunctionalCache<K, V> {
     protected List<FunctionalCache<K, V>> createShardMaps() {
         List<FunctionalCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
-            //todo: fix this
-            MemoryCache<K, V> memCache = new MemoryCache<K, V>(cacheConfig);
-            FileSystemHashCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
-            shards.add(new LayeredCache<>(memCache, fsCache));
+            StatAwareFuncCache<K, V> memCache = new MemoryCache<K, V>(cacheConfig);
+            StatAwareFuncCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
+            shards.add(new LayeredCache<>(new ArrayList<StatAwareFuncCache<K, V>>(Arrays.asList(memCache, fsCache))));
         }
         return Collections.unmodifiableList(shards);
     }
