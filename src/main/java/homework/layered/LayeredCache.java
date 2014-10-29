@@ -8,29 +8,34 @@ import homework.option.Option;
 import homework.utils.LazyValue;
 import homework.utils.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @ThreadSafe
-public class LayeredCache<K, V> implements FunctionalCache<K, V> {
-    protected final StatAwareFuncCache<K, V> memCache;
-    protected final StatAwareFuncCache<K, V> fsCache;
-    protected final List<StatAwareFuncCache<K, V>> caches;
+public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implements FunctionalCache<K, V> {
+    protected final List<Cache> caches;
+    private final List<Pair<Cache, List<Cache>>> cacheWithUpperCaches;
 
-    public LayeredCache(StatAwareFuncCache<K, V> memCache, StatAwareFuncCache<K, V> fsCache) {
-        this.memCache = memCache;
-        this.fsCache = fsCache;
-        caches = Arrays.asList(memCache, fsCache);
+    public LayeredCache(Cache... caches) {
+        this.caches = Arrays.asList(caches);
+        cacheWithUpperCaches = createCacheWithUpperCaches();
+    }
+
+    private ArrayList<Pair<Cache, List<Cache>>> createCacheWithUpperCaches() {
+        ArrayList<Pair<Cache, List<Cache>>> pairs = new ArrayList<>();
+        new CacheAndCallback(cache, )
+        return pairs;
     }
 
     @Override
     public synchronized Option<V> get(K key) {
-        class CacheAndCallback extends Pair<StatAwareFuncCache<K, V>, Consumer<Statistic<V>>> {
+        class CacheAndCallback extends Pair<Cache, Consumer<Statistic<V>>> {
             LazyValue<Statistic<V>> cachedValueIfAny = new LazyValue<>(() -> getFirst().get(key));
 
-            CacheAndCallback(StatAwareFuncCache<K, V> cache, Consumer<Statistic<V>> callback) {
+            CacheAndCallback(Cache cache, Consumer<Statistic<V>> callback) {
                 super(cache, callback);
             }
 
@@ -43,11 +48,14 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
             }
         }
         Option<CacheAndCallback> cacheHitAndCallbackIfAny =
-                Option.from(Stream.of(
-                        new CacheAndCallback(memCache, statistic -> {
-                        }), new CacheAndCallback(fsCache, statistic -> memCache.put(key, statistic)))
-                        .filter(pair -> pair.getCachedValueWithStatisticIfAny().isPresent())
-                        .findFirst());
+                Option.from(
+                        cacheWithUpperCaches.stream().map(cacheWithUpperCaches ->)
+
+                        Stream.of(
+                                new CacheAndCallback(memCache, statistic -> {
+                                }), new CacheAndCallback(fsCache, statistic -> memCache.put(key, statistic)))
+                                .filter(pair -> pair.getCachedValueWithStatisticIfAny().isPresent())
+                                .findFirst());
 
         //execute callback if any
         cacheHitAndCallbackIfAny.ifPresent(pair -> pair.getSecond().accept(pair.getCachedValueWithStatistic()));
@@ -66,13 +74,13 @@ public class LayeredCache<K, V> implements FunctionalCache<K, V> {
     public synchronized boolean remove(K key) {
         return caches.stream()
                 .map(cache -> cache.remove(key))
-                .reduce(true, (removed1, removed2) -> /*removed1||*/removed2);
+                .reduce(false, (removed1, removed2) -> removed1 || removed2);
     }
 
     @Override
     public Stream<Stream<K>> lazyKeyStream() {
         return caches.stream()
-                .flatMap(cache->cache.lazyKeyStream())
+                .flatMap(cache -> cache.lazyKeyStream())
                 .flatMap(keyStream -> keyStream)//flatten:Stream<Stream<K>>->Stream<K>
                 .distinct()//deduplicate keys from the caches
                 .map(key -> Stream.of(key));//wrap back to Stream<Stream>
