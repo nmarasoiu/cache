@@ -4,6 +4,7 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -51,13 +52,19 @@ public abstract class Option<V> {
         return optional.isPresent() ? some(optional.get()) : MISSING;
     }
 
-    public void ifPresent(Consumer<V> consumer) {
+    public Option<V> ifPresent(Consumer<V> consumer) {
         if (isPresent())
             consumer.accept(get());
+        return this;
     }
 
     public V orElse(V val) {
-        return Stream.concat(asStream(), Stream.of(val)).findFirst().get();
+        return orElse(() -> val);
+    }
+
+    public V orElse(Supplier<V> valSupplier) {
+        return Stream.concat(asStream(), Stream.generate(valSupplier))
+                .findFirst().get();
     }
 
     private static final class OptionWithValue<V> extends Option<V> {

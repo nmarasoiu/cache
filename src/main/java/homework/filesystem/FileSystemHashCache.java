@@ -7,7 +7,14 @@ import homework.option.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,11 +26,22 @@ import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static homework.filesystem.Utils.*;
+import static homework.filesystem.Utils.keyPathForEntry;
+import static homework.filesystem.Utils.readKeyBytes;
+import static homework.filesystem.Utils.valuePathForEntry;
 import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static homework.utils.StreamUtils.streamFrom;
 import static homework.utils.StreamUtils.systemClock;
-import static java.nio.file.Files.*;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.getLastModifiedTime;
+import static java.nio.file.Files.isDirectory;
+import static java.nio.file.Files.lines;
+import static java.nio.file.Files.list;
+import static java.nio.file.Files.newInputStream;
+import static java.nio.file.Files.newOutputStream;
+import static java.nio.file.Files.write;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -108,23 +126,19 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     @Override
     public void put(K key, Statistic<V> value) {
         Key<K> keyRelated = new Key<>(basePath, key);
-        Option<Path> maybeEntryDir = keyRelated.findOptionalEntryDir();
+        Path valuePath = keyRelated.findOptionalEntryDir()
+                .ifPresent(entryDir -> {
+//                    uncheckIOException(() -> recursiveDelete(entryDir));
+                })
+                .orElse(() -> uncheckIOException(() -> {
+                    createDirectories(keyRelated.hashDir());
+                    Path entryDir = createDirectories(nextDir(keyRelated.hashDir()));
+                    write(keyPathForEntry(entryDir), keyRelated.keyBytes());
+                    return valuePathForEntry(entryDir);
+                }));
 //        writeIndexer.reindex(maybeEntryDir);
-        uncheckIOException(() -> {
-            final Path valuePath;
-            if (maybeEntryDir.isPresent()) {
-                Path entryDir = maybeEntryDir.get();
-                valuePath = valuePathForEntry(entryDir);
-                delete(valuePath);
-            } else {
-                createDirectories(keyRelated.hashDir());
-                Path entryDir = createDirectories(nextDir(keyRelated.hashDir()));
-                write(keyPathForEntry(entryDir), keyRelated.keyBytes());
-                valuePath = valuePathForEntry(entryDir);
-            }
-            writeObjectToFile(value.getValue()//todo, hai sa despartim put/stat de get/stat
-                    , valuePath);
-        });
+        //todo, hai sa despartim put/stat de get/stat
+        writeObjectToFile(value.getValue(), valuePath);
     }
 
     private Path nextDir(Path hashDir) {

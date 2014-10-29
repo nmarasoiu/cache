@@ -24,10 +24,13 @@ public class LazyValue<V> {
         this(() -> none());
     }
 
-    public Option<V> getValue() {
+    public Option<V> getOption() {
         if (valueOption.isEmpty()) {
             valueOption = supplier.get();
         }
         return valueOption;
+    }
+    public V get() {
+        return getOption().get();
     }
 }

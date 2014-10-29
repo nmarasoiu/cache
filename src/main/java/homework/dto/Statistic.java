@@ -35,7 +35,7 @@ public final class Statistic<V> {
     }
 
     public Option<Instant> getLastModifiedDate() {
-        return lastModifiedDate.getValue();
+        return lastModifiedDate.getOption();
     }
 
     public V getValue() {

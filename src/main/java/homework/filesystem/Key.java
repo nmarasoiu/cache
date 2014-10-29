@@ -39,15 +39,15 @@ public class Key<K> {
     }
 
     public byte[] keyBytes() {
-        return keyBytes.getValue().get();
+        return keyBytes.get();
     }
 
     private String persistentHash() {
-        return persistentHash.getValue().get();
+        return persistentHash.get();
     }
 
     public Path hashDir() {
-        return hashDir.getValue().get();
+        return hashDir.get();
     }
     public Option<Path> findOptionalEntryDir() {
         if (!Files.exists(hashDir())) {

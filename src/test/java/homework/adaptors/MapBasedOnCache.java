@@ -55,6 +55,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public boolean remove(Object o) {
+                //todo - make this functional
                 if (!(o instanceof Entry)) return false;
                 Entry<K, V> kvEntry = (Entry) o;
                 K key = kvEntry.getKey();

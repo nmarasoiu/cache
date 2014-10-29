@@ -10,7 +10,6 @@ import homework.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -37,7 +36,7 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
             }
 
             Option<Statistic<V>> getCachedValueWithStatisticIfAny() {
-                return cachedValueIfAny.getValue();
+                return cachedValueIfAny.getOption();
             }
 
             Statistic<V> getCachedValueWithStatistic() {
