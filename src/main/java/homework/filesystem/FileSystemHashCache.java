@@ -1,6 +1,6 @@
 package homework.filesystem;
 
-import homework.StatAwareFuncCache;
+import homework.StatFCache;
 import homework.dto.Statistic;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
@@ -19,18 +19,8 @@ import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static homework.adaptors.IOUncheckingFiles.createDirectories;
-import static homework.adaptors.IOUncheckingFiles.fromBytes;
-import static homework.adaptors.IOUncheckingFiles.getLastModifiedTime;
-import static homework.adaptors.IOUncheckingFiles.lines;
-import static homework.adaptors.IOUncheckingFiles.list;
-import static homework.adaptors.IOUncheckingFiles.readObjectFromFile;
-import static homework.adaptors.IOUncheckingFiles.walkFileTree;
-import static homework.adaptors.IOUncheckingFiles.write;
-import static homework.adaptors.IOUncheckingFiles.writeObjectToFile;
-import static homework.filesystem.Utils.keyPathForEntry;
-import static homework.filesystem.Utils.readKeyBytes;
-import static homework.filesystem.Utils.valuePathForEntry;
+import static homework.adaptors.IOUncheckingFiles.*;
+import static homework.filesystem.Utils.*;
 import static homework.utils.StreamUtils.systemClock;
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.isDirectory;
@@ -40,7 +30,7 @@ import static java.nio.file.Files.isDirectory;
  * If the filesystem has not-nice limitations in directory entries, pls use ZipFileSystem (hope that is zip64)
  */
 @NonThreadSafe
-public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
+public class FileSystemHashCache<K, V> implements StatFCache<K, V> {
     private static final String LAST_ENTRY_NO_FILENAME = "last.txt";
     private static final Logger LOGGER = LoggerFactory.getLogger(FileSystemHashCache.class);
 
@@ -68,8 +58,8 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Option<Path> entryDirOption = keyRelated.findOptionalEntryDir();
         entryDirOption.ifPresent((entryDir) -> {
-            System.out.println(entryDir.toAbsolutePath());
-            readIndexer.touch(entryDir);
+//            System.out.println(entryDir.toAbsolutePath());
+//            readIndexer.touch(entryDir);
         });
         return entryDirOption
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
@@ -79,6 +69,20 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                                 () -> entryDirOption
                                         .map(entryPathToLastModifiedMapper())
                                         .get()));
+    }
+
+    @Override
+    public void put(K key, Statistic<V> value) {
+        Key<K> keyRelated = new Key<>(basePath, key);
+        Path entryDir = keyRelated.findOptionalEntryDir()
+                .orElse(() -> {
+                    createDirectories(keyRelated.hashDir());
+                    Path newEntryDir = createDirectories(nextDir(keyRelated.hashDir()));
+                    write(keyPathForEntry(newEntryDir), keyRelated.keyBytes());
+                    return newEntryDir;
+                });
+//        writeIndexer.reindex(maybeEntryDir);
+        writeObjectToFile(value.getValue(), valuePathForEntry(entryDir));
     }
 
     @Override
@@ -94,26 +98,11 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
         Stream<Path> hashDirs = listDirs(basePath);
         Stream<Path> entryDirs = hashDirs.flatMap(hashDir -> listDirs(hashDir));
         return entryDirs.map(
-                entryDir -> Stream.generate(() ->//todo check lazy | idempotence | caching of the value (not seralizing again)
-                        (K) fromBytes(readKeyBytes(entryDir))));
+                entryDir -> Stream.of((K) fromBytes(readKeyBytes(entryDir))));
     }
 
     private Function<Path, Instant> entryPathToLastModifiedMapper() {
         return entry -> getLastModifiedTime(entry).toInstant();
-    }
-
-    @Override
-    public void put(K key, Statistic<V> value) {
-        Key<K> keyRelated = new Key<>(basePath, key);
-        Path entryDir = keyRelated.findOptionalEntryDir()
-                .orElse(() -> {
-                    createDirectories(keyRelated.hashDir());
-                    Path newEntryDir = createDirectories(nextDir(keyRelated.hashDir()));
-                    write(keyPathForEntry(newEntryDir), keyRelated.keyBytes());
-                    return newEntryDir;
-                });
-//        writeIndexer.reindex(maybeEntryDir);
-        writeObjectToFile(value.getValue(), valuePathForEntry(entryDir));
     }
 
     private Path nextDir(Path hashDir) {

@@ -1,16 +1,16 @@
 package homework.adaptors;
 
 import homework.Cache;
-import homework.FunctionalCache;
+import homework.FCache;
 import homework.option.Option;
 
 /**
  * Created by dnmaras on 10/27/14.
  */
 public class CacheOverFunctionalCache<K, V> implements Cache<K, V> {
-    protected FunctionalCache<K, V> underlyingCache;
+    protected FCache<K, V> underlyingCache;
 
-    public CacheOverFunctionalCache(FunctionalCache<K, V> underlyingCache) {
+    public CacheOverFunctionalCache(FCache<K, V> underlyingCache) {
         this.underlyingCache = underlyingCache;
     }
 

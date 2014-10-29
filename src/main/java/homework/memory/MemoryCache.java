@@ -1,6 +1,6 @@
 package homework.memory;
 
-import homework.StatAwareFuncCache;
+import homework.StatFCache;
 import homework.adaptors.CacheBasedOnMap;
 import homework.dto.CacheConfig;
 import homework.dto.Statistic;
@@ -24,7 +24,7 @@ import static homework.utils.StreamUtils.systemClock;
  * <p/>
  * The elements to evict for condition 2 are the ones with oldest read/write-time.
  */
-public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
+public class MemoryCache<K, V> implements StatFCache<K, V> {
     protected final CacheConfig cacheConfig;
     private final CacheBasedOnMap<K, V> dataCache;//todo create an interface for Cache+size
     protected final Map<IndexType, Map<K, Instant>> accessOrderedMap;

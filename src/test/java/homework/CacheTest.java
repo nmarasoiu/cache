@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
  * Created by dnmaras on 10/13/14.
  */
 public abstract class CacheTest<K, V> {
-    private FunctionalCache<K, V> cache;
+    private FCache<K, V> cache;
 
     @Before
     public void arrange() {

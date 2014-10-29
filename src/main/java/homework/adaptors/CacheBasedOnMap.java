@@ -1,6 +1,6 @@
 package homework.adaptors;
 
-import homework.FunctionalCache;
+import homework.FCache;
 import homework.markers.NonThreadSafe;
 import homework.option.Option;
 
@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * Created by dnmaras on 10/15/14.
  */
 @NonThreadSafe(comment = "Just as thread safe or not as the underlying map")
-public class CacheBasedOnMap<K, V> implements FunctionalCache<K, V> {
+public class CacheBasedOnMap<K, V> implements FCache<K, V> {
     protected Map<K, V> underlyingMap;
 
     public CacheBasedOnMap(Map<K, V> map) {

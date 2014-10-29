@@ -1,7 +1,7 @@
 package homework.adaptors;
 
-import homework.FunctionalCache;
-import homework.StatAwareFuncCache;
+import homework.FCache;
+import homework.StatFCache;
 import homework.dto.Statistic;
 import homework.option.Option;
 
@@ -10,10 +10,10 @@ import java.util.stream.Stream;
 /**
  * Created by nmarasoiu on 10/28/2014.
  */
-public class FunctionalCacheOverStatAware<K,V> implements FunctionalCache<K,V> {
-    private final StatAwareFuncCache<K,V> underlying;
+public class FCacheOverStatAware<K,V> implements FCache<K,V> {
+    private final StatFCache<K,V> underlying;
 
-    public FunctionalCacheOverStatAware(StatAwareFuncCache<K, V> underlying) {
+    public FCacheOverStatAware(StatFCache<K, V> underlying) {
         this.underlying = underlying;
     }
 

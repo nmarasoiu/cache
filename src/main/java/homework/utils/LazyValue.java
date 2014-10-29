@@ -13,8 +13,10 @@ public class LazyValue<V> {
     //I want to cover the scenario when the client can emitter of the lazy value can delegate to its consumer the supplier of the value, if any
     private final Supplier<Option<V>> supplier;
 
-    //I want to cover value==null case
-    private Option<V> valueOption = none();
+    //I want to cover value==null case (i.e. separate found null from not found)
+    private Option<V> valueOption;
+
+    private boolean valueWasComputed;
 
     public LazyValue(Supplier<Option<V>> supplier) {
         this.supplier = supplier;
@@ -25,11 +27,13 @@ public class LazyValue<V> {
     }
 
     public Option<V> getOption() {
-        if (valueOption.isEmpty()) {
+        if (!valueWasComputed) {
             valueOption = supplier.get();
+            valueWasComputed = true;
         }
         return valueOption;
     }
+
     public V get() {
         return getOption().get();
     }

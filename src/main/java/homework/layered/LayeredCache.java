@@ -1,7 +1,7 @@
 package homework.layered;
 
-import homework.FunctionalCache;
-import homework.StatAwareFuncCache;
+import homework.FCache;
+import homework.StatFCache;
 import homework.dto.Statistic;
 import homework.markers.ThreadSafe;
 import homework.option.Option;
@@ -17,21 +17,21 @@ import static homework.utils.StreamUtils.rangeStream;
 import static homework.utils.StreamUtils.toList;
 
 @ThreadSafe
-public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implements FunctionalCache<K, V> {
-    protected final List<Cache> caches;
-    private final List<Pair<Cache, List<Cache>>> cacheWithUpperCaches;
+public class LayeredCache<K, V> implements StatFCache<K, V> {
+    protected final List<StatFCache<K, V>> caches;
+    private final List<Pair<StatFCache<K, V>, List<StatFCache<K, V>>>> cacheWithUpperCaches;
 
-    public LayeredCache(List<Cache> caches) {
+    public LayeredCache(List<StatFCache<K, V>> caches) {
         this.caches = new ArrayList<>(caches);
         cacheWithUpperCaches = createCacheWithUpperCaches();
     }
 
     @Override
-    public synchronized Option<V> get(K key) {
-        class CacheAndCallback extends Pair<Cache, Consumer<Statistic<V>>> {
+    public synchronized Option<Statistic<V>> get(K key) {
+        class CacheAndCallback extends Pair<StatFCache<K, V>, Consumer<Statistic<V>>> {
             LazyValue<Statistic<V>> cachedValueIfAny = new LazyValue<>(() -> getFirst().get(key));
 
-            CacheAndCallback(Cache cache, Consumer<Statistic<V>> callback) {
+            CacheAndCallback(StatFCache<K, V> cache, Consumer<Statistic<V>> callback) {
                 super(cache, callback);
             }
 
@@ -43,27 +43,27 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
                 return getCachedValueWithStatisticIfAny().get();
             }
         }
+        Stream<CacheAndCallback> cachesContainingTheKey = cacheWithUpperCaches.stream()
+                .map(cacheWithUpperCaches ->
+                        new CacheAndCallback(cacheWithUpperCaches.getFirst(),
+                                statistic ->
+                                        cacheWithUpperCaches.getSecond().stream()
+                                                .forEach(cache -> cache.put(key, statistic))))
+                .filter(pair -> pair.getCachedValueWithStatisticIfAny().isPresent());
+
         Option<CacheAndCallback> cacheHitAndCallbackIfAny =
-                Option.from(
-                        cacheWithUpperCaches.stream()
-                                .map(cacheWithUpperCaches ->
-                                        new CacheAndCallback(cacheWithUpperCaches.getFirst(),
-                                                statistic ->
-                                                        cacheWithUpperCaches.getSecond().stream()
-                                                                .forEach(cache -> cache.put(key, statistic))))
-                                .filter(pair -> pair.getCachedValueWithStatisticIfAny().isPresent())
-                                .findFirst());
+                Option.from(cachesContainingTheKey.findFirst());
 
         //execute callback if any
         cacheHitAndCallbackIfAny.ifPresent(pair -> pair.getSecond().accept(pair.getCachedValueWithStatistic()));
 
         //select just the cache hit if any (discard callback, unwrap)
-        return cacheHitAndCallbackIfAny.map(pair -> pair.getCachedValueWithStatistic().getValue());
+        return cacheHitAndCallbackIfAny.map(pair -> pair.getCachedValueWithStatistic());
     }
 
     @Override
-    public synchronized void put(K key, V value) {
-        caches.forEach(cache -> cache.toSimpleCache().put(key, value));
+    public synchronized void put(K key, Statistic<V> value) {
+        caches.forEach(cache -> cache.put(key, value));
     }
 
 
@@ -75,7 +75,7 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
     }
 
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
+    public synchronized Stream<Stream<K>> lazyKeyStream() {
         return caches.stream()
                 .flatMap(cache -> cache.lazyKeyStream())
                 .flatMap(keyStream -> keyStream)//flatten:Stream<Stream<K>>->Stream<K>
@@ -83,7 +83,7 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
                 .map(key -> Stream.of(key));//wrap back to Stream<Stream>
     }
 
-    private List<Pair<Cache, List<Cache>>> createCacheWithUpperCaches() {
+    private List<Pair<StatFCache<K, V>, List<StatFCache<K, V>>>> createCacheWithUpperCaches() {
         return toList(rangeStream(0, caches.size())
                 .map(cacheIdx -> new Pair<>(caches.get(cacheIdx), caches.subList(0, cacheIdx))));
     }

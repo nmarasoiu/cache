@@ -1,8 +1,9 @@
 package homework.layered;
 
 
-import homework.FunctionalCache;
-import homework.StatAwareFuncCache;
+import homework.FCache;
+import homework.StatFCache;
+import homework.adaptors.FCacheOverStatAware;
 import homework.dto.CacheConfig;
 import homework.filesystem.FileSystemHashCache;
 import homework.markers.ThreadSafe;
@@ -22,10 +23,10 @@ import static homework.utils.StreamUtils.reify;
  * Created by dnmaras on 10/17/14.
  */
 @ThreadSafe(comment = "Just as thread safe as the underlying shard' caches")
-public class SegmentedCache<K, V> implements FunctionalCache<K, V> {
+public class SegmentedCache<K, V> implements FCache<K, V> {
     protected static final int concurrencyFactor = 16;
     protected CacheConfig cacheConfig;
-    protected List<FunctionalCache<K, V>> shards;
+    protected List<FCache<K, V>> shards;
 
     public SegmentedCache(CacheConfig cacheConfig) {
         //todo: create a copy-constructor like functionality with the builder that we cannot forget copy-ing a property here
@@ -56,21 +57,21 @@ public class SegmentedCache<K, V> implements FunctionalCache<K, V> {
         return key == null ? 0 : (key).hashCode();
     }
 
-    protected FunctionalCache<K, V> shard(K key) {
+    protected FCache<K, V> shard(K key) {
         return getShards().get(modulo(key));
     }
 
-    protected List<FunctionalCache<K, V>> createShardMaps() {
-        List<FunctionalCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
+    protected List<FCache<K, V>> createShardMaps() {
+        List<FCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
-            StatAwareFuncCache<K, V> memCache = new MemoryCache<K, V>(cacheConfig);
-            StatAwareFuncCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
-            shards.add(new LayeredCache<>(new ArrayList<StatAwareFuncCache<K, V>>(Arrays.asList(memCache, fsCache))));
+            StatFCache<K, V> memCache = new MemoryCache<K, V>(cacheConfig);
+            StatFCache<K, V> fsCache = new FileSystemHashCache<>(cacheConfig.getBasePath().resolve(String.valueOf(i)));
+            shards.add(new FCacheOverStatAware<K, V>(new LayeredCache<>(new ArrayList<StatFCache<K, V>>(Arrays.asList(memCache, fsCache)))));
         }
         return Collections.unmodifiableList(shards);
     }
 
-    public List<FunctionalCache<K, V>> getShards() {
+    public List<FCache<K, V>> getShards() {
         return shards;
     }
 

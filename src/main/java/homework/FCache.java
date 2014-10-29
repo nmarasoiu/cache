@@ -7,7 +7,7 @@ import java.util.stream.Stream;
 /**
  * Created by dnmaras on 10/11/14.
  */
-public interface FunctionalCache<K, V> {
+public interface FCache<K, V> {
     Option<V> get(K key);
     //todo docu;
     //todo, hai sa despartim put/stat de get/stat

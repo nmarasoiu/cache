@@ -1,17 +1,13 @@
 package homework;
 
-import homework.adaptors.FunctionalCacheOverStatAware;
+import homework.adaptors.FCacheOverStatAware;
 import homework.dto.Statistic;
 import homework.option.Option;
 
 /**
  * Created by dnmaras on 10/27/14.
  */
-public interface StatAwareFuncCache<K, V> extends FunctionalCache<K, Statistic<V>> {
-    default FunctionalCache<K,V> toSimpleCache() {
-        return new FunctionalCacheOverStatAware<>(this);
-    }
-
+public interface StatFCache<K, V> extends FCache<K, Statistic<V>> {
     /**
      * Gets the value bundled with its last refresh timestamp.
      * The refresh timestamp == the time when it was last put.
@@ -24,5 +20,4 @@ public interface StatAwareFuncCache<K, V> extends FunctionalCache<K, Statistic<V
      * The declaration of this method would not be necessary but its better for documentation.
      */
     Option<Statistic<V>> get(K key);
-
 }
