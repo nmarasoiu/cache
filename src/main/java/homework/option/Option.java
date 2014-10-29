@@ -7,15 +7,15 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
-
 /**
- * Created by dnmaras on 10/25/14.
- * Scala Option, but without all the machinery for monads composition like flatMap.
- * In my opinion, Java 8 Optional got it wrong, and was copied after Guava.
+ * Scala Option wannabe.
+ * In my opinion, Java 8 Optional and Streams got it wrong in some ways, and Optional was copied after Guava.
  * One case clearly not covered is when the value is null, but still the value "exists".
  * This is exactly what happens with a null value in a map.
  * And Scala Map has get method returning Option[V] which is simpler and more efficient than always checking for containsKey.
+ * TODO: facade filesystem work so that:
+ * 1. IOException is wrpped into unchecked
+ * 2. the Optional returning methods return Option
  */
 public abstract class Option<V> {
     public abstract V get();
@@ -52,10 +52,6 @@ public abstract class Option<V> {
 
     public static <V> Option<V> from(Optional<V> optional) {
         return optional.isPresent() ? some(optional.get()) : MISSING;
-    }
-
-    public Option<V> ifPresent(IOConsumer<V> consumer) {
-        return ifPresent(val -> uncheckIOException(() -> consumer.accept(val)));
     }
 
     public Option<V> ifPresent(Consumer<V> consumer) {
