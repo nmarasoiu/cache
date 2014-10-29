@@ -64,6 +64,7 @@ public class SegmentedCache<K, V> implements FCache<K, V> {
     protected List<FCache<K, V>> createShardMaps() {
         List<FCache<K, V>> shards = new ArrayList<>(concurrencyFactor);
         for (int i = 0; i < concurrencyFactor; i++) {
+            //todo - install guice and inject thru constructor
             FCache<K, Stat<V>> memCache = new MemoryCache<K, V>(cacheConfig);
             FCache<K, Stat<V>> fsCache = new FileSystemHashCache<>(
                     cacheConfig.getBasePath().resolve(String.valueOf(i)));

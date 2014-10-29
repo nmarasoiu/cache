@@ -46,7 +46,7 @@ public class MemoryCache<K, V> implements FCache<K, Stat<V>> {
 
     @Override
     public void put(K key, Stat<V> stat) {
-        //to do - is this the right place to inject now? i guess so, because unless it comes with a timestamp from filesystem using the explicit Statistic constructor, it means it is a normal value put, and that is a fresh one
+        //todo - is this the right place to inject now? i guess so, because unless it comes with a timestamp from filesystem using the explicit Statistic constructor, it means it is a normal value put, and that is a fresh one
         Instant lastModTimestamp = stat.getLastModifiedDate().orElse(() -> nowSource.next());
         writeAccessOrderedMap().put(key, lastModTimestamp);
         dataCache.put(key, stat.getValue());
