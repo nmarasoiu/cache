@@ -94,11 +94,11 @@ public class FileSystemHashCache<K, V> implements FCache<K, Stat<V>> {
     }
 
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
+    public Stream<K> keyStream() {
         Stream<Path> hashDirs = listDirs(basePath);
         Stream<Path> entryDirs = hashDirs.flatMap(hashDir -> listDirs(hashDir));
         return entryDirs.map(
-                entryDir -> Stream.of((K) fromBytes(readKeyBytes(entryDir))));
+                entryDir -> (K) fromBytes(readKeyBytes(entryDir)));
     }
 
     private Function<Path, Instant> entryPathToLastModifiedMapper() {

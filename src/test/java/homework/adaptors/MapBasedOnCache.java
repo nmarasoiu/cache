@@ -72,8 +72,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
                     private final Iterator<Entry<K, V>> iterator = getEntryStream().iterator();
 
                     private Stream<Entry<K, V>> getEntryStream() {
-                        return fCache.lazyKeyStream()
-                                .flatMap(a->a)
+                        return fCache.keyStream()
                                 .flatMap(key ->
                                         Collections.singletonMap(key, get(key))
                                                 .entrySet().stream());
@@ -103,7 +102,7 @@ public class MapBasedOnCache<K, V> extends AbstractMap<K, V> implements Map<K, V
 
             @Override
             public int size() {
-                return (int) fCache.lazyKeyStream().count();
+                return (int) fCache.size();
             }
         };
     }

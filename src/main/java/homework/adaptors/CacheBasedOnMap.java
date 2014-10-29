@@ -25,9 +25,8 @@ public class CacheBasedOnMap<K, V> implements FCache<K, V> {
                 ? Option.none():Option.some(val);
     }
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
-        Stream<K> keyStream = underlyingMap.keySet().stream();
-        return keyStream.map(key->Stream.of(key));
+    public Stream<K> keyStream() {
+        return underlyingMap.keySet().stream();
     }
 
     @Override

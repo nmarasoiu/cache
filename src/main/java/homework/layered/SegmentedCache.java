@@ -84,8 +84,8 @@ public class SegmentedCache<K, V> implements FCache<K, V> {
     }
 
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
+    public Stream<K> keyStream() {
         return reify(shards.stream()
-                .flatMap(shard -> shard.lazyKeyStream()));
+                .flatMap(shard -> shard.keyStream()));
     }
 }

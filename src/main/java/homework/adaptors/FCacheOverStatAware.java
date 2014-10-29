@@ -32,7 +32,7 @@ public class FCacheOverStatAware<K,V> implements FCache<K,V> {
     }
 
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
-        return underlying.lazyKeyStream();
+    public Stream<K> keyStream() {
+        return underlying.keyStream();
     }
 }

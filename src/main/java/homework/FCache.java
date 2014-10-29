@@ -14,5 +14,8 @@ public interface FCache<K, V> {
     void put(K key, V value);
     //ops below are just used in tests, so they dont need to be efficient
     boolean remove(K k);
-    Stream<Stream<K>> lazyKeyStream();
+    Stream<K> keyStream();
+    default long size() {
+        return keyStream().count();
+    }
 }

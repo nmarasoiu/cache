@@ -87,12 +87,10 @@ public class LayeredCache<K, V> implements FCache<K, Stat<V>> {
     }
 
     @Override
-    public synchronized Stream<Stream<K>> lazyKeyStream() {
+    public synchronized Stream<K> keyStream() {
         return caches.stream()
-                .flatMap(cache -> cache.lazyKeyStream())
-                .flatMap(keyStream -> keyStream)//flatten:Stream<Stream<K>>->Stream<K>
-                .distinct()//deduplicate keys from the caches
-                .map(key -> Stream.of(key));//wrap back to Stream<Stream>
+                .flatMap(cache -> cache.keyStream())
+                .distinct();//deduplicate keys from the caches
     }
 
     private List<Pair<FCache<K, Stat<V>>, List<FCache<K, Stat<V>>>>> createCacheWithUpperCaches() {

@@ -76,10 +76,8 @@ public class MemoryCache<K, V> implements FCache<K, Stat<V>> {
     }
 
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
-        return dataCache.lazyKeyStream()
-                .flatMap(a->a)//flatten
-                .map(key->Stream.of(key));
+    public Stream<K> keyStream() {
+        return dataCache.keyStream();
     }
 
     private void maybeDoSomeEviction() {

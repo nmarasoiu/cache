@@ -32,7 +32,7 @@ public class StatAwareOverSimpleCache<K,V> implements FCache<K,Stat<V>> {
     }
 
     @Override
-    public Stream<Stream<K>> lazyKeyStream() {
-        return underlying.lazyKeyStream();
+    public Stream<K> keyStream() {
+        return underlying.keyStream();
     }
 }
