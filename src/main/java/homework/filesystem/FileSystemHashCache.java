@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.keyPathForEntry;
@@ -77,10 +76,10 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     public Option<Statistic<V>> get(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
         Option<Path> entryDirOption = keyRelated.findOptionalEntryDir();
-        if (entryDirOption.isPresent()) {
-            System.out.println(entryDirOption.get().toAbsolutePath());
-//            uncheckIOException(() -> readIndexer.touch(entryDirOption.get()));
-        }
+        entryDirOption.ifPresent((entryDir) -> {
+            System.out.println(entryDir.toAbsolutePath());
+            uncheckIOException(() -> readIndexer.touch(entryDir));
+        });
         return entryDirOption
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
                 .map((valuePath) -> readObjectFromFile(valuePath))
@@ -93,13 +92,11 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
 
     @Override
     public boolean remove(K key) {
-        Key<K> keyRelated = new Key<>(basePath, key);
-        Option<Path> entryDirOpt = keyRelated.findOptionalEntryDir();
-        boolean exists = entryDirOpt.isPresent();
-        if (exists) {
-            uncheckIOException(() -> recursiveDelete(entryDirOpt.get()));
-        }
-        return exists;
+        return new Key<>(basePath, key)
+                .findOptionalEntryDir()
+                .ifPresent((entryDir) ->
+                        uncheckIOException(() ->
+                                recursiveDelete(entryDir))).isPresent();
     }
 
     @Override
