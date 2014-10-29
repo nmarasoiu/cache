@@ -8,7 +8,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
-import static java.nio.file.Files.*;
+import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
+import static java.nio.file.Files.delete;
+import static java.nio.file.Files.exists;
+import static java.nio.file.Files.readAllLines;
 
 /**
  * Manages 2 double linked lists, remembering the order of access, one for read and one for write.
@@ -42,7 +45,7 @@ public class Indexer {
 
     private void append(Path entryDir) throws IOException {
         Option<Path> optTail = readLink(tailLinkPath);
-        if(optTail.isPresent()){
+        if (optTail.isPresent()) {
             Path currentTail = optTail.get();
             Path rightLink = pathForSiblingLink(currentTail, SiblingDirection.RIGHT);
             persistLink(rightLink, entryDir);
@@ -71,21 +74,27 @@ public class Indexer {
     }
 
 
-    private void writeSibling(Path entryDir, Option<Path> leftSibling, SiblingDirection siblingDirection, Option<Path> rightSibling) throws IOException {
-        if (leftSibling.isPresent()) {
-            Path linkPath = pathForSiblingLink(leftSibling.get(), siblingDirection);
-            if (!rightSibling.isPresent()) {
-                if(exists(linkPath)) delete(linkPath);
-            } else {
-                persistLink(linkPath, rightSibling.get());
-            }
-        } else {
-            if (siblingDirection == SiblingDirection.RIGHT) {
-                setHead(entryDir);
-            } else {
-                setTail(entryDir);
-            }
-        }
+    private void writeSibling(Path entryDir, Option<Path> leftSiblingOption, SiblingDirection siblingDirection, Option<Path> rightSiblingOption) throws IOException {
+        leftSiblingOption.ifPresent(leftSibling -> {
+            Path linkPath =
+                    pathForSiblingLink(leftSibling, siblingDirection);
+            rightSiblingOption
+                    .ifPresent(rightSibling ->
+                            uncheckIOException(() ->
+                                    persistLink(linkPath, rightSibling)))
+                    .orElse(() -> {
+                        if (exists(linkPath))
+                            uncheckIOException(() ->
+                                    delete(linkPath));
+                    });
+        }).orElse(() ->
+                uncheckIOException(() -> {
+                    if (siblingDirection == SiblingDirection.RIGHT) {
+                        setHead(entryDir);
+                    } else {
+                        setTail(entryDir);
+                    }
+                }));
     }
 
     private Path pathForSiblingLink(Path entryDir, SiblingDirection siblingDirection) {
@@ -105,7 +114,7 @@ public class Indexer {
     }
 
     private void persistLink(Path destination, Path value) throws IOException {
-        if(!exists(destination.getParent())){
+        if (!exists(destination.getParent())) {
             System.out.println();
         }
         Files.write(destination, Collections.singleton(value.toString()));

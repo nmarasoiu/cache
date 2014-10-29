@@ -7,6 +7,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
+
 /**
  * Created by dnmaras on 10/25/14.
  * Scala Option, but without all the machinery for monads composition like flatMap.
@@ -52,14 +54,20 @@ public abstract class Option<V> {
         return optional.isPresent() ? some(optional.get()) : MISSING;
     }
 
+    public Option<V> ifPresent(IOConsumer<V> consumer) {
+        return ifPresent(val -> uncheckIOException(() -> consumer.accept(val)));
+    }
+
     public Option<V> ifPresent(Consumer<V> consumer) {
         if (isPresent())
             consumer.accept(get());
         return this;
     }
 
-    public V orElse(V val) {
-        return orElse(() -> val);
+    public Option<V> orElse(Runnable task) {
+        if (isEmpty())
+            task.run();
+        return this;
     }
 
     public V orElse(Supplier<V> valSupplier) {
