@@ -126,19 +126,15 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
     @Override
     public void put(K key, Statistic<V> value) {
         Key<K> keyRelated = new Key<>(basePath, key);
-        Path valuePath = keyRelated.findOptionalEntryDir()
-                .ifPresent(entryDir -> {
-//                    uncheckIOException(() -> recursiveDelete(entryDir));
-                })
+        Path entryDir = keyRelated.findOptionalEntryDir()
                 .orElse(() -> uncheckIOException(() -> {
                     createDirectories(keyRelated.hashDir());
-                    Path entryDir = createDirectories(nextDir(keyRelated.hashDir()));
-                    write(keyPathForEntry(entryDir), keyRelated.keyBytes());
-                    return valuePathForEntry(entryDir);
+                    Path newEntryDir = createDirectories(nextDir(keyRelated.hashDir()));
+                    write(keyPathForEntry(newEntryDir), keyRelated.keyBytes());
+                    return newEntryDir;
                 }));
 //        writeIndexer.reindex(maybeEntryDir);
-        //todo, hai sa despartim put/stat de get/stat
-        writeObjectToFile(value.getValue(), valuePath);
+        writeObjectToFile(value.getValue(), valuePathForEntry(entryDir));
     }
 
     private Path nextDir(Path hashDir) {
