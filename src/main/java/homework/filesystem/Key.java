@@ -33,9 +33,9 @@ public class Key<K> {
     public Key(Path basePath, K key) {
         this.key = key;
         this.basePath = basePath;
-        keyBytes = new LazyValue<>(()-> some(bytes(key)));
-        persistentHash = new LazyValue<>(()-> some(toString(newDigester().digest(keyBytes()))));
-        hashDir = new LazyValue<>(()->some(basePath.resolve(persistentHash())));
+        keyBytes = new LazyValue<>(() -> some(bytes(key)));
+        persistentHash = new LazyValue<>(() -> some(toString(newDigester().digest(keyBytes()))));
+        hashDir = new LazyValue<>(() -> some(basePath.resolve(persistentHash())));
     }
 
     public byte[] keyBytes() {
@@ -49,17 +49,17 @@ public class Key<K> {
     public Path hashDir() {
         return hashDir.get();
     }
+
     public Option<Path> findOptionalEntryDir() {
-        if (!Files.exists(hashDir())) {
-            return Option.empty();
-        }
-        return uncheckIOException(() -> {
-            try (Stream<Path> list = Files.list(hashDir())) {
-                return Option.from(list.filter((path) -> Files.isDirectory(path))
-                        .filter(this::isThisMyKey)
-                        .findFirst());
-            }
-        });
+        return Files.exists(hashDir()) ?
+                uncheckIOException(() -> {
+                    try (Stream<Path> list = Files.list(hashDir())) {
+                        return Option.from(
+                                list.filter((path) -> Files.isDirectory(path))
+                                        .filter(this::isThisMyKey)
+                                        .findFirst());
+                    }
+                }) : Option.empty();
     }
 
     private Boolean isThisMyKey(Path entryDir) {
