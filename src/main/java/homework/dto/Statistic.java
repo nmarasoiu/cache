@@ -20,11 +20,7 @@ public final class Statistic<V> {
         this(value, new LazyValue<>());
     }
 
-    public Statistic(V value, Instant lastModifiedDate) {
-        this(value, () -> lastModifiedDate);
-    }
-
-    private Statistic(V value, Supplier<Instant> lastModSupplier) {
+    public Statistic(V value, Supplier<Instant> lastModSupplier) {
         this.value = value;
         this.lastModifiedDate = new LazyValue<>(()->some(lastModSupplier.get()));
     }

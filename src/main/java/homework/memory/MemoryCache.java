@@ -58,7 +58,7 @@ public class MemoryCache<K, V> implements StatAwareFuncCache<K, V> {
 
         return getVal(key).map(value ->
                 new Statistic<V>(value,
-                        writeAccessOrderedMap().get(key)));
+                        ()->writeAccessOrderedMap().get(key)));
     }
 
     public Option<V> getVal(K key) {

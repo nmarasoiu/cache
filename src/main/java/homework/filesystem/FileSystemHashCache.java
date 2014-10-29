@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.keyPathForEntry;
@@ -33,7 +34,6 @@ import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 import static homework.utils.StreamUtils.streamFrom;
 import static homework.utils.StreamUtils.systemClock;
 import static java.nio.file.Files.createDirectories;
-import static java.nio.file.Files.delete;
 import static java.nio.file.Files.exists;
 import static java.nio.file.Files.getLastModifiedTime;
 import static java.nio.file.Files.isDirectory;
@@ -86,7 +86,7 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
                 .map((valuePath) -> readObjectFromFile(valuePath))
                 .map(value ->
                         new Statistic<V>(value,
-                                keyRelated.findOptionalEntryDir()
+                                () -> entryDirOption
                                         .map(entryPathToLastModifiedMapper())
                                         .get()));
     }
