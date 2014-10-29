@@ -14,6 +14,9 @@ import java.util.ListIterator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static homework.utils.StreamUtils.rangeStream;
+import static homework.utils.StreamUtils.toList;
+
 @ThreadSafe
 public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implements FunctionalCache<K, V> {
     protected final List<Cache> caches;
@@ -48,7 +51,7 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
                                         new CacheAndCallback(cacheWithUpperCaches.getFirst(),
                                                 statistic ->
                                                         cacheWithUpperCaches.getSecond().stream()
-                                                                .forEach(cache->cache.put(key, statistic))))
+                                                                .forEach(cache -> cache.put(key, statistic))))
                                 .filter(pair -> pair.getCachedValueWithStatisticIfAny().isPresent())
                                 .findFirst());
 
@@ -82,13 +85,7 @@ public class LayeredCache<K, V, Cache extends StatAwareFuncCache<K, V>> implemen
     }
 
     private List<Pair<Cache, List<Cache>>> createCacheWithUpperCaches() {
-        List<Pair<Cache, List<Cache>>> pairs = new ArrayList<>();
-        for (ListIterator<Cache> iterator = caches.listIterator(); iterator.hasNext(); ) {
-            int currentIndex = iterator.nextIndex();
-            Cache currentCache = caches.get(currentIndex);
-            List<Cache> previousCaches = caches.subList(0, currentIndex);
-            pairs.add(new Pair<>(currentCache, previousCaches));
-        }
-        return pairs;
+        return toList(rangeStream(0, caches.size())
+                .map(cacheIdx -> new Pair<>(caches.get(cacheIdx), caches.subList(0, cacheIdx))));
     }
 }
