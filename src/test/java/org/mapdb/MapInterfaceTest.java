@@ -16,8 +16,16 @@ package org.mapdb;/*
 
 import junit.framework.TestCase;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 import static java.util.Collections.singleton;
 
