@@ -15,7 +15,8 @@ import java.util.stream.Stream;
 
 import static homework.filesystem.Utils.readKeyBytes;
 import static homework.option.Option.some;
-import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
+import static homework.adaptors.IOUncheckingFiles.*;
+import static homework.adaptors.IOUncheckingFiles.bytes;
 
 /**
  * Created by dnmaras on 10/25/14.
@@ -51,19 +52,19 @@ public class Key<K> {
     }
 
     public Option<Path> findOptionalEntryDir() {
-        return Files.exists(hashDir()) ?
-                uncheckIOException(() -> {
-                    try (Stream<Path> list = Files.list(hashDir())) {
-                        return Option.from(
-                                list.filter((path) -> Files.isDirectory(path))
-                                        .filter(this::isThisMyKey)
-                                        .findFirst());
-                    }
-                }) : Option.empty();
+        if (!Files.exists(hashDir())) {
+            return Option.empty();
+        }
+        try (Stream<Path> list = list(hashDir())) {
+            return Option.from(
+                    list.filter((path) -> Files.isDirectory(path))
+                            .filter(this::isThisMyKey)
+                            .findFirst());
+        }
     }
 
     private Boolean isThisMyKey(Path entryDir) {
-        return uncheckIOException(() -> (Arrays.equals(readKeyBytes(entryDir), keyBytes())));
+        return (Arrays.equals(readKeyBytes(entryDir), keyBytes()));
     }
 
     private String toString(byte[] bytes) {
@@ -83,13 +84,4 @@ public class Key<K> {
         }
     }
 
-    private <T> byte[] bytes(T object) {
-        return uncheckIOException(() -> {
-            try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                 ObjectOutput out = new ObjectOutputStream(bos)) {
-                out.writeObject(object);
-                return bos.toByteArray();
-            }
-        });
-    }
 }

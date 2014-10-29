@@ -7,14 +7,7 @@ import homework.option.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,21 +19,21 @@ import java.util.Iterator;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static homework.adaptors.IOUncheckingFiles.createDirectories;
+import static homework.adaptors.IOUncheckingFiles.fromBytes;
+import static homework.adaptors.IOUncheckingFiles.getLastModifiedTime;
+import static homework.adaptors.IOUncheckingFiles.lines;
+import static homework.adaptors.IOUncheckingFiles.list;
+import static homework.adaptors.IOUncheckingFiles.readObjectFromFile;
+import static homework.adaptors.IOUncheckingFiles.walkFileTree;
+import static homework.adaptors.IOUncheckingFiles.write;
+import static homework.adaptors.IOUncheckingFiles.writeObjectToFile;
 import static homework.filesystem.Utils.keyPathForEntry;
 import static homework.filesystem.Utils.readKeyBytes;
 import static homework.filesystem.Utils.valuePathForEntry;
-import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
-import static homework.utils.StreamUtils.streamFrom;
 import static homework.utils.StreamUtils.systemClock;
-import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.exists;
-import static java.nio.file.Files.getLastModifiedTime;
 import static java.nio.file.Files.isDirectory;
-import static java.nio.file.Files.lines;
-import static java.nio.file.Files.list;
-import static java.nio.file.Files.newInputStream;
-import static java.nio.file.Files.newOutputStream;
-import static java.nio.file.Files.write;
 
 /**
  * Makes a HashMap in the filesystem.
@@ -65,11 +58,9 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
         this.nowSource = nowSource.iterator();
         readIndexer = new Indexer(IndexType.READ, basePath);
         writeIndexer = new Indexer(IndexType.WRITE, basePath);
-        this.basePath = uncheckIOException(() -> {
-            Path normalizedBase = basePath.normalize();
-            LOGGER.debug("Storing fs cache at {}", normalizedBase);
-            return createDirectories(normalizedBase);
-        });
+        Path normalizedBase = basePath.normalize();
+        LOGGER.debug("Storing fs cache at {}", normalizedBase);
+        this.basePath = createDirectories(normalizedBase);
     }
 
     @Override
@@ -78,11 +69,11 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
         Option<Path> entryDirOption = keyRelated.findOptionalEntryDir();
         entryDirOption.ifPresent((entryDir) -> {
             System.out.println(entryDir.toAbsolutePath());
-            uncheckIOException(() -> readIndexer.touch(entryDir));
+            readIndexer.touch(entryDir);
         });
         return entryDirOption
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
-                .map((valuePath) -> readObjectFromFile(valuePath))
+                .map((valuePath) -> (V) readObjectFromFile(valuePath))
                 .map(value ->
                         new Statistic<V>(value,
                                 () -> entryDirOption
@@ -95,106 +86,68 @@ public class FileSystemHashCache<K, V> implements StatAwareFuncCache<K, V> {
         return new Key<>(basePath, key)
                 .findOptionalEntryDir()
                 .ifPresent((entryDir) ->
-                        uncheckIOException(() ->
-                                recursiveDelete(entryDir))).isPresent();
+                        recursiveDelete(entryDir)).isPresent();
     }
 
     @Override
     public Stream<Stream<K>> lazyKeyStream() {
-        return uncheckIOException(() -> {
-            Stream<Path> hashDirs = listDirs(basePath);
-            Stream<Path> entryDirs = hashDirs.flatMap(
-                    hashDir -> uncheckIOException(() -> listDirs(hashDir)));
-            return entryDirs.map(
-                    entryDir -> streamFrom(() ->
-                            (K) fromBytes(readKeyBytes(entryDir))));
-        });
+        Stream<Path> hashDirs = listDirs(basePath);
+        Stream<Path> entryDirs = hashDirs.flatMap(hashDir -> listDirs(hashDir));
+        return entryDirs.map(
+                entryDir -> Stream.generate(() ->//todo check lazy | idempotence | caching of the value (not seralizing again)
+                        (K) fromBytes(readKeyBytes(entryDir))));
     }
 
     private Function<Path, Instant> entryPathToLastModifiedMapper() {
-        return entry -> uncheckIOException(() ->
-                getLastModifiedTime(entry).toInstant());
+        return entry -> getLastModifiedTime(entry).toInstant();
     }
 
     @Override
     public void put(K key, Statistic<V> value) {
         Key<K> keyRelated = new Key<>(basePath, key);
         Path entryDir = keyRelated.findOptionalEntryDir()
-                .orElse(() -> uncheckIOException(() -> {
+                .orElse(() -> {
                     createDirectories(keyRelated.hashDir());
                     Path newEntryDir = createDirectories(nextDir(keyRelated.hashDir()));
                     write(keyPathForEntry(newEntryDir), keyRelated.keyBytes());
                     return newEntryDir;
-                }));
+                });
 //        writeIndexer.reindex(maybeEntryDir);
         writeObjectToFile(value.getValue(), valuePathForEntry(entryDir));
     }
 
     private Path nextDir(Path hashDir) {
-        return uncheckIOException(() -> {
-            Path file = hashDir.resolve(LAST_ENTRY_NO_FILENAME);
-            final String nextInt = String.valueOf
-                    (exists(file) ? 1 + Long.parseLong(lines(file).findFirst().get()) : 1);
-            write(file, Collections.singleton(nextInt));
-            return hashDir.resolve(nextInt);
-        });
+        Path file = hashDir.resolve(LAST_ENTRY_NO_FILENAME);
+        final String nextInt = String.valueOf
+                (exists(file) ? 1 + Long.parseLong(lines(file).findFirst().get()) : 1);
+        write(file, Collections.singleton(nextInt));
+        return hashDir.resolve(nextInt);
     }
 
-    private V readObjectFromFile(Path path) {
-        return uncheckIOException(() -> {
-            try (InputStream fileInStream = newInputStream(path);
-                 ObjectInput objectInStream = new ObjectInputStream(fileInStream)) {
-                return (V) objectInStream.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    private void writeObjectToFile(Object value, Path path) {
-        uncheckIOException(() -> {
-            try (OutputStream fileOutStream = newOutputStream(path);
-                 ObjectOutput objOutStream = new ObjectOutputStream(fileOutStream)) {
-                objOutStream.writeObject(value);
-            }
-        });
-
-    }
 
     private Instant now() {
         return nowSource.next();
     }
 
     private void recursiveDelete(Path directory) {
-        uncheckIOException(() ->
-                Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        Files.delete(file);
-                        return FileVisitResult.CONTINUE;
-                    }
+        walkFileTree(directory, new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                Files.delete(file);
+                return FileVisitResult.CONTINUE;
+            }
 
-                    @Override
-                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                        Files.delete(dir);
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                }));
-    }
-
-    private Object fromBytes(byte[] bytes) {
-        return uncheckIOException(() -> {
-            try (ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
-                return in.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+            @Override
+            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                Files.delete(dir);
+                return FileVisitResult.CONTINUE;
             }
         });
     }
 
+
     private Stream<Path> listDirs(Path parent) {
-        return uncheckIOException(() -> list(parent).filter(f -> isDirectory(f)));
+        return list(parent).filter(f -> isDirectory(f));
     }
 
 }

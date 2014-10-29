@@ -10,8 +10,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
-
 /**
  * Created by dnmaras on 10/21/14.
  */
@@ -27,11 +25,6 @@ public final class StreamUtils {
         List<T> list = new ArrayList<>();
         in.forEach(list::add);
         return list;
-    }
-
-    public static <V> Stream<V> streamFrom(IOCallable<V> callable) {
-        //todo replace with generate from Supplier
-        return Stream.of(1).map(any -> uncheckIOException(callable));
     }
 
     public static Stream<Integer> rangeStream(int startInclusive, int endExclusive) {

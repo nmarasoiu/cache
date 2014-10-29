@@ -1,8 +1,8 @@
 package homework.filesystem;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static homework.adaptors.IOUncheckingFiles.readAllBytes;
 
 /**
  * Created by dnmaras on 10/25/14.
@@ -20,8 +20,8 @@ public final class Utils {
         return entryDir.resolve(VALUE_FILENAME);
     }
 
-    public static byte[] readKeyBytes(Path entryDir) throws IOException {
-        return Files.readAllBytes(entryDir.resolve(KEY_FILENAME));
+    public static byte[] readKeyBytes(Path entryDir){
+        return readAllBytes(entryDir.resolve(KEY_FILENAME));
     }
 
 }

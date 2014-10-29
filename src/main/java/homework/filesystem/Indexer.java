@@ -2,16 +2,14 @@ package homework.filesystem;
 
 import homework.option.Option;
 
-import java.io.IOException;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 
-import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
-import static java.nio.file.Files.delete;
+import static homework.adaptors.IOUncheckingFiles.deleteIfExists;
+import static homework.adaptors.IOUncheckingFiles.readAllLines;
+import static homework.adaptors.IOUncheckingFiles.write;
 import static java.nio.file.Files.exists;
-import static java.nio.file.Files.readAllLines;
 
 /**
  * Manages 2 double linked lists, remembering the order of access, one for read and one for write.
@@ -33,17 +31,17 @@ public class Indexer {
         tailLinkPath = basePath.resolve(TAIL_FILENAME);
     }
 
-    public void touch(Path entryDir) throws IOException {
+    public void touch(Path entryDir) {
         moveAtTheEnd(entryDir);
     }
 
-    private void moveAtTheEnd(Path entryDir) throws IOException {
+    private void moveAtTheEnd(Path entryDir) {
         //put the entry at the end of r/w access queue: link the prev to the next
         removeFromLinkedList(entryDir);
         append(entryDir);
     }
 
-    private void append(Path entryDir) throws IOException {
+    private void append(Path entryDir) {
         Option<Path> optTail = readLink(tailLinkPath);
         if (optTail.isPresent()) {
             Path currentTail = optTail.get();
@@ -53,7 +51,7 @@ public class Indexer {
         setTail(entryDir);
     }
 
-    private void removeFromLinkedList(Path entryDir) throws IOException {
+    private void removeFromLinkedList(Path entryDir) {
         Option<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
         Option<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
 
@@ -61,12 +59,12 @@ public class Indexer {
         writeSibling(entryDir, nextDir, SiblingDirection.LEFT, previousDir);
     }
 
-    private Option<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) throws IOException {
+    private Option<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) {
         Path linkPath = pathForSiblingLink(entryDir, siblingDirection);
         return readLink(linkPath);
     }
 
-    private Option<Path> readLink(Path linkPath) throws IOException {
+    private Option<Path> readLink(Path linkPath) {
         if (!exists(linkPath)) {
             return Option.empty();
         }
@@ -74,27 +72,24 @@ public class Indexer {
     }
 
 
-    private void writeSibling(Path entryDir, Option<Path> leftSiblingOption, SiblingDirection siblingDirection, Option<Path> rightSiblingOption) throws IOException {
+    private void writeSibling(Path entryDir, Option<Path> leftSiblingOption, SiblingDirection siblingDirection, Option<Path> rightSiblingOption) {
         leftSiblingOption.ifPresent(leftSibling -> {
             Path linkPath =
                     pathForSiblingLink(leftSibling, siblingDirection);
             rightSiblingOption
                     .ifPresent(rightSibling ->
-                            uncheckIOException(() ->
-                                    persistLink(linkPath, rightSibling)))
+                            persistLink(linkPath, rightSibling))
                     .orElse(() -> {
                         if (exists(linkPath))
-                            uncheckIOException(() ->
-                                    delete(linkPath));
+                            deleteIfExists(linkPath);
                     });
-        }).orElse(() ->
-                uncheckIOException(() -> {
-                    if (siblingDirection == SiblingDirection.RIGHT) {
-                        setHead(entryDir);
-                    } else {
-                        setTail(entryDir);
-                    }
-                }));
+        }).orElse(() -> {
+            if (siblingDirection == SiblingDirection.RIGHT) {
+                setHead(entryDir);
+            } else {
+                setTail(entryDir);
+            }
+        });
     }
 
     private Path pathForSiblingLink(Path entryDir, SiblingDirection siblingDirection) {
@@ -105,19 +100,19 @@ public class Indexer {
         return siblingDirection.name() + "_" + indexType.name();
     }
 
-    private void setHead(Path entryPath) throws IOException {
+    private void setHead(Path entryPath) {
         persistLink(headLinkPath, entryPath);
     }
 
-    private void setTail(Path entryPath) throws IOException {
+    private void setTail(Path entryPath) {
         persistLink(tailLinkPath, entryPath);
     }
 
-    private void persistLink(Path destination, Path value) throws IOException {
+    private void persistLink(Path destination, Path value) {
         if (!exists(destination.getParent())) {
             System.out.println();
         }
-        Files.write(destination, Collections.singleton(value.toString()));
+        write(destination, Collections.singleton(value.toString()));
     }
 
 }

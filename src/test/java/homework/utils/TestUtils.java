@@ -2,9 +2,11 @@ package homework.utils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 
-import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
+import static homework.adaptors.IOUncheckingFiles.*;
+
 
 /**
  * Created by nmarasoiu on 10/20/14.
@@ -12,15 +14,12 @@ import static homework.utils.ExceptionWrappingUtils.uncheckIOException;
 public class TestUtils {
     //externalize into configuration
     public static Path createRoot() {
-        return uncheckIOException(() ->
-                createRoot(Files.createTempDirectory("tema_" + UUID.randomUUID())));
+        return createRoot(createTempDirectory(("tema_" + UUID.randomUUID())));
     }
 
     private static Path createRoot(Path home) {
-        return uncheckIOException(() -> {
-            if (Files.exists(home) && Files.list(home).findAny().isPresent()) throw new IllegalStateException();
-            return Files.createDirectories(home);
-        });
+            if (Files.exists(home) && list(home).findAny().isPresent()) throw new IllegalStateException();
+            return createDirectories(home);
     }
 
 }
