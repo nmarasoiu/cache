@@ -30,6 +30,7 @@ public class Indexer {
     }
 
     public void touch(Path entryDir) {
+        System.out.println("yola "+indexType+" indexer touch on "+entryDir.toAbsolutePath());
         moveAtTheEnd(entryDir);
     }
 

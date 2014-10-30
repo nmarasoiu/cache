@@ -16,7 +16,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static homework.adaptors.IOUncheckingFiles.*;
@@ -56,19 +55,14 @@ public class FileSystemHashCache<K, V> implements FCache<K, Stat<V>> {
     @Override
     public Option<Stat<V>> get(K key) {
         Key<K> keyRelated = new Key<K>(basePath, key);
-        Option<Path> entryDirOption = keyRelated.findOptionalEntryDir();
-        entryDirOption.ifPresent((entryDir) -> {
-//            System.out.println(entryDir.toAbsolutePath());
-//            readIndexer.touch(entryDir);
-        });
-        return entryDirOption
+        return keyRelated.findOptionalEntryDir()
+                .ifPresent((entryDir) -> readIndexer.touch(entryDir))
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
-                .map((valuePath) -> (V) readObjectFromFile(valuePath))
-                .map(value ->
-                        new Stat<V>(value,
-                                () -> entryDirOption
-                                        .map(entryPathToLastModifiedMapper())
-                                        .get()));
+
+                .map((valuePath) -> new Stat<V>(
+                                (V) readObjectFromFile(valuePath),
+                                () -> getLastModifiedTime(valuePath).toInstant())
+                );
     }
 
     @Override
@@ -81,7 +75,8 @@ public class FileSystemHashCache<K, V> implements FCache<K, Stat<V>> {
                     write(keyPathForEntry(newEntryDir), keyRelated.keyBytes());
                     return newEntryDir;
                 });
-//        writeIndexer.reindex(maybeEntryDir);
+
+        writeIndexer.touch(entryDir);
         writeObjectToFile(value.getValue(), valuePathForEntry(entryDir));
     }
 
@@ -99,10 +94,6 @@ public class FileSystemHashCache<K, V> implements FCache<K, Stat<V>> {
         Stream<Path> entryDirs = hashDirs.flatMap(hashDir -> listDirs(hashDir));
         return entryDirs.map(
                 entryDir -> (K) fromBytes(readKeyBytes(entryDir)));
-    }
-
-    private Function<Path, Instant> entryPathToLastModifiedMapper() {
-        return entry -> getLastModifiedTime(entry).toInstant();
     }
 
     private Path nextDir(Path hashDir) {
