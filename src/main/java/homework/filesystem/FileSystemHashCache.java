@@ -58,7 +58,6 @@ public class FileSystemHashCache<K, V> implements FCache<K, Stat<V>> {
         return keyRelated.findOptionalEntryDir()
                 .ifPresent((entryDir) -> readIndexer.touch(entryDir))
                 .map((entryDir) -> Utils.valuePathForEntry(entryDir))
-
                 .map((valuePath) -> new Stat<V>(
                                 (V) readObjectFromFile(valuePath),
                                 () -> getLastModifiedTime(valuePath).toInstant())
@@ -85,7 +84,8 @@ public class FileSystemHashCache<K, V> implements FCache<K, Stat<V>> {
         return new Key<>(basePath, key)
                 .findOptionalEntryDir()
                 .ifPresent((entryDir) ->
-                        recursiveDelete(entryDir)).isPresent();
+                        recursiveDelete(entryDir))
+                .isPresent();
     }
 
     @Override

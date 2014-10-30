@@ -40,6 +40,14 @@ public class Indexer {
         append(entryDir);
     }
 
+    private void removeFromLinkedList(Path entryDir) {
+        Option<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
+        Option<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
+
+        writeSibling(entryDir, previousDir, SiblingDirection.RIGHT, nextDir);
+        writeSibling(entryDir, nextDir, SiblingDirection.LEFT, previousDir);
+    }
+
     private void append(Path entryDir) {
         Option<Path> optTail = readLink(tailLinkPath);
         if (optTail.isPresent()) {
@@ -48,14 +56,6 @@ public class Indexer {
             persistLink(rightLink, entryDir);
         }
         setTail(entryDir);
-    }
-
-    private void removeFromLinkedList(Path entryDir) {
-        Option<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
-        Option<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
-
-        writeSibling(entryDir, previousDir, SiblingDirection.RIGHT, nextDir);
-        writeSibling(entryDir, nextDir, SiblingDirection.LEFT, previousDir);
     }
 
     private Option<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) {
@@ -69,7 +69,6 @@ public class Indexer {
         }
         return Option.of(fs.getPath(readAllLines(linkPath).get(0)));
     }
-
 
     private void writeSibling(Path entryDir,
                               Option<Path> leftSiblingOption,
