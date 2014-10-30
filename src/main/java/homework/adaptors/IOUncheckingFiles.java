@@ -42,8 +42,7 @@ public final class IOUncheckingFiles {
 
     public static Path write(Path path, Iterable<? extends CharSequence> lines,
                              OpenOption... options) {
-        return uncheckIOException(() -> Files.write(path, lines, options
-        ));
+        return uncheckIOException(() -> Files.write(path, lines, options));
     }
 
     public static InputStream newInputStream(Path path, OpenOption... options) {
@@ -82,10 +81,10 @@ public final class IOUncheckingFiles {
     }
 
     public static Path createTempDirectory(String prefix,
-                                           FileAttribute<?>... attrs)
-    {
-        return uncheckIOException(() -> Files.createTempDirectory(prefix,attrs));
+                                           FileAttribute<?>... attrs) {
+        return uncheckIOException(() -> Files.createTempDirectory(prefix, attrs));
     }
+
     public static Path createTempDirectory(Path dir,
                                            String prefix,
                                            FileAttribute<?>... attrs) {
@@ -140,6 +139,8 @@ public final class IOUncheckingFiles {
         try {
             return callable.call();
         } catch (IOException e) {
+            //todo remove the print stack
+            e.printStackTrace();
             throw new UncheckedIOException(e);
         }
     }

@@ -30,7 +30,7 @@ public class Indexer {
     }
 
     public void touch(Path entryDir) {
-        System.out.println("yola "+indexType+" indexer touch on "+entryDir.toAbsolutePath());
+        System.out.println("yola " + indexType + " indexer touch on " + entryDir.toAbsolutePath());
         moveAtTheEnd(entryDir);
     }
 
@@ -41,21 +41,27 @@ public class Indexer {
     }
 
     private void removeFromLinkedList(Path entryDir) {
-        Option<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
-        Option<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
+        if (exists(entryDir)) {
+            Option<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
+            Option<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
 
-        writeSibling(entryDir, previousDir, SiblingDirection.RIGHT, nextDir);
-        writeSibling(entryDir, nextDir, SiblingDirection.LEFT, previousDir);
+            writeSibling(previousDir, SiblingDirection.RIGHT, nextDir);
+            writeSibling(nextDir, SiblingDirection.LEFT, previousDir);
+        }
     }
 
     private void append(Path entryDir) {
-        Option<Path> optTail = readLink(tailLinkPath);
-        if (optTail.isPresent()) {
-            Path currentTail = optTail.get();
-            Path rightLink = pathForSiblingLink(currentTail, SiblingDirection.RIGHT);
-            persistLink(rightLink, entryDir);
-        }
+        readLink(tailLinkPath)
+                .ifPresent((currentTail) -> {
+                    link(currentTail, entryDir, SiblingDirection.RIGHT);
+                    link(entryDir, currentTail, SiblingDirection.LEFT);
+                }).orElse(() -> setHead(entryDir));
         setTail(entryDir);
+    }
+
+    private void link(Path sourceEntry, Path targetEntry, SiblingDirection direction) {
+        Path linkPath = pathForSiblingLink(sourceEntry, direction);
+        persistLink(linkPath, targetEntry);
     }
 
     private Option<Path> getSibling(Path entryDir, SiblingDirection siblingDirection) {
@@ -70,22 +76,35 @@ public class Indexer {
         return Option.of(fs.getPath(readAllLines(linkPath).get(0)));
     }
 
-    private void writeSibling(Path entryDir,
-                              Option<Path> leftSiblingOption,
+    private void writeSibling(Option<Path> originSiblingOption,
                               SiblingDirection siblingDirection,
-                              Option<Path> rightSiblingOption) {
-        leftSiblingOption.ifPresent(leftSibling -> {
-            Path linkPath = pathForSiblingLink(leftSibling, siblingDirection);
-            rightSiblingOption
+                              Option<Path> destinationSiblingOption) {
+        originSiblingOption.ifPresent(leftSibling -> {
+            destinationSiblingOption
                     .ifPresent(rightSibling ->
-                            persistLink(linkPath, rightSibling))
-                    .orElse(() -> deleteIfExists(linkPath));
+                            link(leftSibling, rightSibling, siblingDirection))
+                    .orElse(() -> {
+                        if (siblingDirection == SiblingDirection.RIGHT) {
+                            setTail(leftSibling);
+                        } else {
+                            setHead(leftSibling);
+                        }
+                        deleteIfExists(pathForSiblingLink(leftSibling, siblingDirection));
+                    });
         }).orElse(() -> {
-            if (siblingDirection == SiblingDirection.RIGHT) {
-                setHead(entryDir);
-            } else {
-                setTail(entryDir);
-            }
+            destinationSiblingOption
+                    .ifPresent(rightSibling -> {
+                        if (siblingDirection == SiblingDirection.RIGHT) {
+                            setHead(rightSibling);
+                        } else {
+                            setTail(rightSibling);
+                        }
+                        deleteIfExists(pathForSiblingLink(rightSibling, siblingDirection));
+                    })
+                    .orElse(() -> {
+                        deleteIfExists(tailLinkPath);
+                        deleteIfExists(headLinkPath);
+                    });
         });
     }
 
