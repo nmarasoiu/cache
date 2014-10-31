@@ -30,7 +30,7 @@ public class Indexer {
     }
 
     public void touch(Path entryDir) {
-        System.out.println("yola " + indexType + " indexer touch on " + entryDir.toAbsolutePath());
+//        System.out.println("yola " + indexType + " indexer touch on " + entryDir.toAbsolutePath());
         moveAtTheEnd(entryDir);
     }
 
@@ -42,19 +42,19 @@ public class Indexer {
 
     private void removeFromLinkedList(Path entryDir) {
         if (exists(entryDir)) {
-            Option<Path> previousDir = getSibling(entryDir, SiblingDirection.LEFT);
-            Option<Path> nextDir = getSibling(entryDir, SiblingDirection.RIGHT);
+            Option<Path> previousDir = getSibling(entryDir, SiblingDirection.BW);
+            Option<Path> nextDir = getSibling(entryDir, SiblingDirection.FW);
 
-            writeSibling(previousDir, SiblingDirection.RIGHT, nextDir);
-            writeSibling(nextDir, SiblingDirection.LEFT, previousDir);
+            writeSibling(previousDir, SiblingDirection.FW, nextDir);
+            writeSibling(nextDir, SiblingDirection.BW, previousDir);
         }
     }
 
     private void append(Path entryDir) {
         readLink(tailLinkPath)
                 .ifPresent((currentTail) -> {
-                    link(currentTail, entryDir, SiblingDirection.RIGHT);
-                    link(entryDir, currentTail, SiblingDirection.LEFT);
+                    link(currentTail, entryDir, SiblingDirection.FW);
+                    link(entryDir, currentTail, SiblingDirection.BW);
                 }).orElse(() -> setHead(entryDir));
         setTail(entryDir);
     }
@@ -76,36 +76,33 @@ public class Indexer {
         return Option.of(fs.getPath(readAllLines(linkPath).get(0)));
     }
 
-    private void writeSibling(Option<Path> originSiblingOption,
+    private void writeSibling(Option<Path> originOpt,
                               SiblingDirection siblingDirection,
-                              Option<Path> destinationSiblingOption) {
-        originSiblingOption.ifPresent(leftSibling -> {
-            destinationSiblingOption
-                    .ifPresent(rightSibling ->
-                            link(leftSibling, rightSibling, siblingDirection))
+                              Option<Path> destOpt) {
+        originOpt.ifPresent(origin -> {
+            destOpt.ifPresent(rightSibling ->
+                    link(origin, rightSibling, siblingDirection))
                     .orElse(() -> {
-                        if (siblingDirection == SiblingDirection.RIGHT) {
-                            setTail(leftSibling);
+                        if (siblingDirection == SiblingDirection.FW) {
+                            setTail(origin);
                         } else {
-                            setHead(leftSibling);
+                            setHead(origin);
                         }
-                        deleteIfExists(pathForSiblingLink(leftSibling, siblingDirection));
+                        deleteIfExists(pathForSiblingLink(origin, siblingDirection));
                     });
-        }).orElse(() -> {
-            destinationSiblingOption
-                    .ifPresent(rightSibling -> {
-                        if (siblingDirection == SiblingDirection.RIGHT) {
-                            setHead(rightSibling);
-                        } else {
-                            setTail(rightSibling);
-                        }
-                        deleteIfExists(pathForSiblingLink(rightSibling, siblingDirection));
-                    })
-                    .orElse(() -> {
-                        deleteIfExists(tailLinkPath);
-                        deleteIfExists(headLinkPath);
-                    });
-        });
+        }).orElse(() ->
+                destOpt.ifPresent(dest -> {
+                    if (siblingDirection == SiblingDirection.FW) {
+                        setHead(dest);
+                    } else {
+                        setTail(dest);
+                    }
+                    deleteIfExists(pathForSiblingLink(dest, siblingDirection));
+                })
+                        .orElse(() -> {
+                            deleteIfExists(tailLinkPath);
+                            deleteIfExists(headLinkPath);
+                        }));
     }
 
     private Path pathForSiblingLink(Path entryDir, SiblingDirection siblingDirection) {
